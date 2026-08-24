@@ -45,14 +45,18 @@ class DashboardService {
 
     final summary = DashboardSummary.fromEnvelope(body);
 
-    final vts = (inner['VTS'] as Map<String, dynamic>?)?['available'] as List<dynamic>? ?? [];
-    final vtsDevices = vts.map((e) => DeviceItem.fromJson(e as Map<String, dynamic>)).toList();
+    final vts = (inner['VTS'] as Map<String, dynamic>?)?['available']
+            as List<dynamic>? ??
+        [];
+    final vtsDevices =
+        vts.map((e) => DeviceItem.fromJson(e as Map<String, dynamic>)).toList();
 
     return DashboardData(summary: summary, vtsDevices: vtsDevices);
   }
 
   /// POST /usage/reports/report/unrechableDevices?accid=<id>
-  Future<List<UnreachableDevice>> getUnreachableDevices({required String accountId}) async {
+  Future<List<UnreachableDevice>> getUnreachableDevices(
+      {required String accountId}) async {
     final json = await _client.post(
       _unreachablePath,
       body: {'accid': accountId},
@@ -60,7 +64,9 @@ class DashboardService {
     );
     final body = json as Map<String, dynamic>;
     final list = (body['data'] as List<dynamic>?) ?? [];
-    return list.map((e) => UnreachableDevice.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => UnreachableDevice.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// POST /usage/reports/report/mapview?accid=<id> — reused by the
@@ -73,7 +79,9 @@ class DashboardService {
     );
     final body = json as Map<String, dynamic>;
     final list = (body['data'] as List<dynamic>?) ?? [];
-    return list.map((e) => DeviceItem.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => DeviceItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// POST /usage/reports/top-distance-devices?accid=<id>&limit=<n>
@@ -82,8 +90,9 @@ class DashboardService {
     int limit = 10,
   }) async {
     final json = await _client.post(
-      '$_topDistancePath?accid=$accountId&limit=$limit',
+      _topDistancePath,
       body: {},
+      query: {'accid': accountId, 'limit': limit},
     );
     final body = json as Map<String, dynamic>;
     if (body['resultCode'] != 1) return [];
@@ -135,18 +144,23 @@ class DashboardService {
     }));
 
     final points = results
-        .map((r) => UtilizationPoint(dayLabel: _dayLabels[r.day.weekday % 7], utilization: r.pct))
+        .map((r) => UtilizationPoint(
+            dayLabel: _dayLabels[r.day.weekday % 7], utilization: r.pct))
         .toList();
 
     if (points.isEmpty) return UtilizationResult.empty();
 
-    final avg = (points.map((p) => p.utilization).reduce((a, b) => a + b) / points.length).round();
+    final avg = (points.map((p) => p.utilization).reduce((a, b) => a + b) /
+            points.length)
+        .round();
 
     final half = (points.length ~/ 2).clamp(1, points.length);
     final earlyAvg =
-        points.take(half).map((p) => p.utilization).reduce((a, b) => a + b) / half;
+        points.take(half).map((p) => p.utilization).reduce((a, b) => a + b) /
+            half;
     final latest = points.last.utilization;
-    final trend = earlyAvg > 0 ? (((latest - earlyAvg) / earlyAvg) * 100).round() : 0;
+    final trend =
+        earlyAvg > 0 ? (((latest - earlyAvg) / earlyAvg) * 100).round() : 0;
 
     return UtilizationResult(points: points, avg: avg, trend: trend);
   }
@@ -168,8 +182,12 @@ class DashboardService {
     final dataList = (data['data'] as List<dynamic>?) ?? [];
 
     return DbAlertsResult(
-      summary: summaryList.map((e) => AlertTypeCount.fromJson(e as Map<String, dynamic>)).toList(),
-      alerts: dataList.map((e) => DbAlert.fromJson(e as Map<String, dynamic>)).toList(),
+      summary: summaryList
+          .map((e) => AlertTypeCount.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      alerts: dataList
+          .map((e) => DbAlert.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 

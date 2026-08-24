@@ -9,6 +9,7 @@ import '../../core/map_view/map_view_status.dart';
 import '../../models/device_item.dart';
 import '../../providers/map_view_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/selected_account_provider.dart';
 import '../../widgets/loading_view.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/empty_view.dart';
@@ -42,17 +43,30 @@ class _MapViewScreenState extends State<MapViewScreen> {
   MapViewStatus? _filter; // null = "All"
   String _search = '';
   String? _highlightedImei;
+  String? _lastAccountId;
 
-  void _load() {
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
+  String _resolveAccountId() {
+    final selected =
+        context.read<SelectedAccountProvider>().selectedAccount?.id;
+    return selected ?? context.read<AuthProvider>().user?.accountId ?? '1';
+  }
+
+  void _load(String accountId) {
+    _lastAccountId = accountId;
     context.read<MapViewProvider>().load(accountId);
   }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
-    _timer = Timer.periodic(_refreshInterval, (_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load(_resolveAccountId());
+    });
+    // Periodic auto-refresh uses whichever account is currently selected,
+    // resolved fresh on each tick — so switching accounts also switches
+    // what the timer refreshes.
+    _timer =
+        Timer.periodic(_refreshInterval, (_) => _load(_resolveAccountId()));
   }
 
   @override
@@ -96,6 +110,17 @@ class _MapViewScreenState extends State<MapViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // context.watch subscribes this build to SelectedAccountProvider, so
+    // Flutter re-runs build() the instant the dropdown selection changes
+    // — no manual addListener/removeListener bookkeeping that can go
+    // stale across route transitions or hot reload.
+    final selectedId =
+        context.watch<SelectedAccountProvider>().selectedAccount?.id;
+    if (selectedId != null && selectedId != _lastAccountId) {
+      _lastAccountId = selectedId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _load(selectedId));
+    }
+
     final mv = context.watch<MapViewProvider>();
     final all = mv.vehicles;
     final filtered = _filteredSorted(all);
@@ -157,7 +182,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
           Expanded(
               child: ErrorView(
                   message: mv.errorMessage ?? 'Failed to load map data.',
-                  onRetry: _load))
+                  onRetry: () => _load(_resolveAccountId())))
         else if (mv.status == LoadStatus.loading && all.isEmpty)
           const Expanded(child: LoadingView())
         else ...[

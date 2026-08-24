@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
+import '../../providers/selected_account_provider.dart';
 import '../../models/imei_option.dart';
 import '../../models/distance_report_result.dart';
 import '../../providers/auth_provider.dart';
@@ -44,9 +45,13 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
 
   Future<void> _loadImeis() async {
     setState(() => _imeiLoading = true);
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
+    final accountId =
+        context.read<SelectedAccountProvider>().selectedAccount?.id ??
+            context.read<AuthProvider>().user?.accountId ??
+            '1';
     try {
-      final list = await context.read<ReportsRepository>().getImeiDropdown(accountId);
+      final list =
+          await context.read<ReportsRepository>().getImeiDropdown(accountId);
       setState(() {
         _imeiList = list;
         if (list.isNotEmpty) _imei = list.first.imei;
@@ -155,13 +160,30 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
     if (iso == null) return '';
     final d = DateTime.tryParse(iso);
     if (d == null) return iso;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
     return '${d.day} ${months[d.month - 1]}';
   }
 
   Widget _legendDot(Color color, String label) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+              color: color, borderRadius: BorderRadius.circular(2))),
       const SizedBox(width: 4),
       Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
     ]);
@@ -170,15 +192,19 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
   @override
   Widget build(BuildContext context) {
     final chartRecords = (_report?.vehicleDistances ?? []).where((r) {
-      return _isSingleDay ? r.hr != null : (r.repDate != null && r.repDate!.isNotEmpty);
+      return _isSingleDay
+          ? r.hr != null
+          : (r.repDate != null && r.repDate!.isNotEmpty);
     }).toList();
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Distance Report', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const Text('Distance Report',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('Daily or hourly distance travelled and average speed per vehicle.',
+        Text(
+            'Daily or hourly distance travelled and average speed per vehicle.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
         const SizedBox(height: 16),
         Card(
@@ -187,7 +213,9 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Vehicle / IMEI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                const Text('Vehicle / IMEI',
+                    style:
+                        TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 ImeiSelectField(
                   options: _imeiList,
@@ -201,7 +229,8 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => _pickDate(true),
-                        child: Text('From: ${_startDate.day}/${_startDate.month}/${_startDate.year}',
+                        child: Text(
+                            'From: ${_startDate.day}/${_startDate.month}/${_startDate.year}',
                             style: const TextStyle(fontSize: 12)),
                       ),
                     ),
@@ -209,8 +238,9 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => _pickDate(false),
-                        child:
-                            Text('To: ${_endDate.day}/${_endDate.month}/${_endDate.year}', style: const TextStyle(fontSize: 12)),
+                        child: Text(
+                            'To: ${_endDate.day}/${_endDate.month}/${_endDate.year}',
+                            style: const TextStyle(fontSize: 12)),
                       ),
                     ),
                   ],
@@ -232,7 +262,11 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _loading || _imei == null ? null : _fetchReport,
                     icon: _loading
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.search, size: 16),
                     label: Text(_loading ? 'Searching\u2026' : 'Search'),
                   ),
@@ -241,8 +275,12 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(10)),
-                    child: Text(_error!, style: const TextStyle(color: Color(0xFFE11D48), fontSize: 12)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFFFF1F2),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Text(_error!,
+                        style: const TextStyle(
+                            color: Color(0xFFE11D48), fontSize: 12)),
                   ),
                 ],
               ],
@@ -277,7 +315,8 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
               iconColor: const Color(0xFF4F46E5),
               iconBg: const Color(0xFFEEF2FF),
               label: 'Total Distance',
-              value: _report != null ? '${_report!.totalDistanceKm} km' : '\u2014',
+              value:
+                  _report != null ? '${_report!.totalDistanceKm} km' : '\u2014',
             ),
             KpiCard(
               icon: Icons.speed,
@@ -295,24 +334,33 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_isSingleDay ? 'Hourly Distance & Speed' : 'Daily Distance & Speed',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                Text(
+                    _isSingleDay
+                        ? 'Hourly Distance & Speed'
+                        : 'Daily Distance & Speed',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
                 if (_loading)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 30), child: LoadingView())
+                  const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: LoadingView())
                 else if (_report == null)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     child: Center(
-                        child: Text('Select a vehicle and date range, then Search.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                        child: Text(
+                            'Select a vehicle and date range, then Search.',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade500))),
                   )
                 else if (chartRecords.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     child: Center(
                         child: Text('No data found for the selected range.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade500))),
                   )
                 else
                   SizedBox(
@@ -322,14 +370,18 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                         alignment: BarChartAlignment.spaceAround,
                         maxY: _chartMaxY(chartRecords),
                         titlesData: FlTitlesData(
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false)),
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
                               reservedSize: 32,
-                              getTitlesWidget: (v, m) =>
-                                  Text('${v.toInt()}', style: TextStyle(fontSize: 9, color: Colors.grey.shade400)),
+                              getTitlesWidget: (v, m) => Text('${v.toInt()}',
+                                  style: TextStyle(
+                                      fontSize: 9,
+                                      color: Colors.grey.shade400)),
                             ),
                           ),
                           bottomTitles: AxisTitles(
@@ -338,12 +390,18 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                               reservedSize: 26,
                               getTitlesWidget: (v, m) {
                                 final i = v.toInt();
-                                if (i < 0 || i >= chartRecords.length) return const SizedBox.shrink();
+                                if (i < 0 || i >= chartRecords.length)
+                                  return const SizedBox.shrink();
                                 final r = chartRecords[i];
-                                final label = _isSingleDay ? '${r.hr}h' : _shortDate(r.repDate);
+                                final label = _isSingleDay
+                                    ? '${r.hr}h'
+                                    : _shortDate(r.repDate);
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 4),
-                                  child: Text(label, style: TextStyle(fontSize: 8, color: Colors.grey.shade400)),
+                                  child: Text(label,
+                                      style: TextStyle(
+                                          fontSize: 8,
+                                          color: Colors.grey.shade400)),
                                 );
                               },
                             ),
@@ -352,7 +410,8 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                         gridData: FlGridData(
                           show: true,
                           drawVerticalLine: false,
-                          getDrawingHorizontalLine: (v) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
+                          getDrawingHorizontalLine: (v) => FlLine(
+                              color: Colors.grey.shade100, strokeWidth: 1),
                         ),
                         borderData: FlBorderData(show: false),
                         barGroups: [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/selected_account_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/imei_option.dart';
 import '../../models/track_point.dart';
@@ -16,7 +17,12 @@ class StoppageCluster {
   final int durationMs;
   final double? lat;
   final double? lng;
-  StoppageCluster({required this.start, required this.end, required this.durationMs, this.lat, this.lng});
+  StoppageCluster(
+      {required this.start,
+      required this.end,
+      required this.durationMs,
+      this.lat,
+      this.lng});
 }
 
 const _minDurationOptions = [1, 2, 5, 10, 15, 30];
@@ -25,9 +31,11 @@ const _minDurationOptions = [1, 2, 5, 10, 15, 30];
 /// time-sorted points, clusters consecutive STOP points, closes a
 /// cluster on any non-STOP point (or end of array), keeps only clusters
 /// >= minDurationMs (filters brief traffic-light / sensor-jitter stops).
-List<StoppageCluster> _detectStoppages(List<TrackPoint> points, int minDurationMs) {
+List<StoppageCluster> _detectStoppages(
+    List<TrackPoint> points, int minDurationMs) {
   if (points.length < 2) return [];
-  final sorted = [...points]..sort((a, b) => (a.ts ?? '').compareTo(b.ts ?? ''));
+  final sorted = [...points]
+    ..sort((a, b) => (a.ts ?? '').compareTo(b.ts ?? ''));
 
   final clusters = <StoppageCluster>[];
   TrackPoint? clusterStart;
@@ -35,7 +43,8 @@ List<StoppageCluster> _detectStoppages(List<TrackPoint> points, int minDurationM
 
   void closeCluster() {
     if (clusterStart == null || clusterEnd == null) return;
-    final s = DateTime.tryParse((clusterStart!.ts ?? '').replaceFirst(' ', 'T'));
+    final s =
+        DateTime.tryParse((clusterStart!.ts ?? '').replaceFirst(' ', 'T'));
     final e = DateTime.tryParse((clusterEnd!.ts ?? '').replaceFirst(' ', 'T'));
     if (s != null && e != null) {
       final duration = e.difference(s).inMilliseconds;
@@ -118,9 +127,13 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
 
   Future<void> _loadImeis() async {
     setState(() => _imeiLoading = true);
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
+    final accountId =
+        context.read<SelectedAccountProvider>().selectedAccount?.id ??
+            context.read<AuthProvider>().user?.accountId ??
+            '1';
     try {
-      final list = await context.read<ReportsRepository>().getImeiDropdown(accountId);
+      final list =
+          await context.read<ReportsRepository>().getImeiDropdown(accountId);
       setState(() {
         _imeiList = list;
         if (list.isNotEmpty) _imei = list.first.imei;
@@ -159,11 +172,13 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(base));
+    final time = await showTimePicker(
+        context: context, initialTime: TimeOfDay.fromDateTime(base));
     if (time == null) return;
     setState(() {
       _quick = null;
-      final combined = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      final combined =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
       if (isFrom) {
         _from = combined;
       } else {
@@ -188,11 +203,12 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
       _stoppages = [];
     });
     try {
-      final points = await context.read<ReportsRepository>().getTrackPlayHistory(
-            imei: _imei!,
-            startTime: _from.toUtc().toIso8601String(),
-            endTime: _to.toUtc().toIso8601String(),
-          );
+      final points =
+          await context.read<ReportsRepository>().getTrackPlayHistory(
+                imei: _imei!,
+                startTime: _from.toUtc().toIso8601String(),
+                endTime: _to.toUtc().toIso8601String(),
+              );
       final result = _detectStoppages(points, _minDurMinutes * 60 * 1000);
       setState(() {
         _stoppages = result;
@@ -215,14 +231,18 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
   Widget build(BuildContext context) {
     final totalStops = _stoppages.length;
     final totalMs = _stoppages.fold<int>(0, (sum, s) => sum + s.durationMs);
-    final longestMs = _stoppages.isEmpty ? 0 : _stoppages.map((s) => s.durationMs).reduce((a, b) => a > b ? a : b);
+    final longestMs = _stoppages.isEmpty
+        ? 0
+        : _stoppages.map((s) => s.durationMs).reduce((a, b) => a > b ? a : b);
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text('Stoppage Report', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+        const Text('Stoppage Report',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text('Detects where a vehicle stopped, for how long, and maps each stop location.',
+        Text(
+            'Detects where a vehicle stopped, for how long, and maps each stop location.',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
         const SizedBox(height: 16),
         Card(
@@ -231,7 +251,9 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Vehicle / IMEI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                const Text('Vehicle / IMEI',
+                    style:
+                        TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 ImeiSelectField(
                   options: _imeiList,
@@ -245,12 +267,14 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
                     Expanded(
                         child: OutlinedButton(
                             onPressed: () => _pickDateTime(true),
-                            child: Text('From: ${_fmtShort(_from)}', style: const TextStyle(fontSize: 11)))),
+                            child: Text('From: ${_fmtShort(_from)}',
+                                style: const TextStyle(fontSize: 11)))),
                     const SizedBox(width: 8),
                     Expanded(
                         child: OutlinedButton(
                             onPressed: () => _pickDateTime(false),
-                            child: Text('To: ${_fmtShort(_to)}', style: const TextStyle(fontSize: 11)))),
+                            child: Text('To: ${_fmtShort(_to)}',
+                                style: const TextStyle(fontSize: 11)))),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -258,18 +282,27 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
                   spacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    ...['Today', 'Yesterday', 'Last 7 Days'].map((q) => ChoiceChip(
+                    ...[
+                      'Today',
+                      'Yesterday',
+                      'Last 7 Days'
+                    ].map((q) => ChoiceChip(
                           label: Text(q, style: const TextStyle(fontSize: 11)),
                           selected: _quick == q,
                           onSelected: (_) => _applyQuick(q),
                         )),
                     const SizedBox(width: 4),
-                    const Text('Min duration:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const Text('Min duration:',
+                        style: TextStyle(fontSize: 11, color: Colors.grey)),
                     DropdownButton<int>(
                       value: _minDurMinutes,
                       isDense: true,
-                      style: const TextStyle(fontSize: 11, color: Colors.black87),
-                      items: _minDurationOptions.map((m) => DropdownMenuItem(value: m, child: Text('$m min'))).toList(),
+                      style:
+                          const TextStyle(fontSize: 11, color: Colors.black87),
+                      items: _minDurationOptions
+                          .map((m) =>
+                              DropdownMenuItem(value: m, child: Text('$m min')))
+                          .toList(),
                       onChanged: (v) => setState(() => _minDurMinutes = v ?? 2),
                     ),
                   ],
@@ -280,17 +313,26 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _loading || _imei == null ? null : _search,
                     icon: _loading
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.search, size: 16),
-                    label: Text(_loading ? 'Detecting\u2026' : 'Find Stoppages'),
+                    label:
+                        Text(_loading ? 'Detecting\u2026' : 'Find Stoppages'),
                   ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(10)),
-                    child: Text(_error!, style: const TextStyle(color: Color(0xFFE11D48), fontSize: 12)),
+                    decoration: BoxDecoration(
+                        color: const Color(0xFFFFF1F2),
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Text(_error!,
+                        style: const TextStyle(
+                            color: Color(0xFFE11D48), fontSize: 12)),
                   ),
                 ],
               ],
@@ -336,23 +378,30 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Stoppage Events (${_stoppages.length})', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                Text('Stoppage Events (${_stoppages.length})',
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
                 if (_loading)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 30), child: LoadingView())
+                  const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: LoadingView())
                 else if (!_fetched)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     child: Center(
-                        child: Text('Select a vehicle and date range, then Find Stoppages.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                        child: Text(
+                            'Select a vehicle and date range, then Find Stoppages.',
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade500))),
                   )
                 else if (_stoppages.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     child: Center(
                         child: Text('No stoppages found for this period.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                            style: TextStyle(
+                                fontSize: 12, color: Colors.grey.shade500))),
                   )
                 else
                   ..._stoppages.asMap().entries.map((entry) {
@@ -361,34 +410,53 @@ class _StoppageReportScreenState extends State<StoppageReportScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(10)),
+                      decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade200),
+                          borderRadius: BorderRadius.circular(10)),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 12,
                             backgroundColor: Colors.grey.shade100,
-                            child: Text('${i + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.black87)),
+                            child: Text('${i + 1}',
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black87)),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${_fmtTs(s.start)} \u2192 ${_fmtTs(s.end)}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                                Text(
+                                    '${_fmtTs(s.start)} \u2192 ${_fmtTs(s.end)}',
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 3),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(999)),
-                                  child: Text(_fmtDuration(s.durationMs), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFB45309))),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                      color: const Color(0xFFFFFBEB),
+                                      borderRadius: BorderRadius.circular(999)),
+                                  child: Text(_fmtDuration(s.durationMs),
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFFB45309))),
                                 ),
                               ],
                             ),
                           ),
                           if (s.lat != null && s.lng != null)
                             IconButton(
-                              icon: const Icon(Icons.map_outlined, size: 18, color: AppColors.primary),
+                              icon: const Icon(Icons.map_outlined,
+                                  size: 18, color: AppColors.primary),
                               onPressed: () => launchUrl(
-                                Uri.parse('https://www.google.com/maps?q=${s.lat},${s.lng}'),
+                                Uri.parse(
+                                    'https://www.google.com/maps?q=${s.lat},${s.lng}'),
                                 mode: LaunchMode.externalApplication,
                               ),
                             ),

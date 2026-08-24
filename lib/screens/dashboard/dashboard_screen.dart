@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/utils/load_status.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/selected_account_provider.dart';
 import '../../models/top_distance_item.dart';
 import '../../widgets/kpi_card.dart';
 import '../../widgets/loading_view.dart';
@@ -34,15 +35,29 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  void _loadAll() {
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
+  String? _lastAccountId;
+
+  /// The account whose data should be shown: the one picked in the
+  /// account selector, falling back to the logged-in user's own account
+  /// until a dropdown selection has loaded.
+  String _resolveAccountId() {
+    final selected =
+        context.read<SelectedAccountProvider>().selectedAccount?.id;
+    return selected ?? context.read<AuthProvider>().user?.accountId ?? '1';
+  }
+
+  void _loadAll(String accountId) {
     context.read<DashboardProvider>().loadAll(accountId);
   }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final id = _resolveAccountId();
+      _lastAccountId = id;
+      _loadAll(id);
+    });
   }
 
   String _greeting() {
@@ -54,12 +69,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // context.watch subscribes THIS build to SelectedAccountProvider, so
+    // Flutter re-runs build() the instant the dropdown selection changes
+    // — no manual addListener/removeListener bookkeeping that can go
+    // stale across route transitions or hot reload.
+    final selectedId =
+        context.watch<SelectedAccountProvider>().selectedAccount?.id;
+    if (selectedId != null && selectedId != _lastAccountId) {
+      _lastAccountId = selectedId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadAll(selectedId));
+    }
+
     final dash = context.watch<DashboardProvider>();
     final user = context.watch<AuthProvider>().user;
-    final firstName = user != null && user.name.trim().isNotEmpty ? user.name.trim().split(' ').first : 'there';
+    final firstName = user != null && user.name.trim().isNotEmpty
+        ? user.name.trim().split(' ').first
+        : 'there';
 
     return RefreshIndicator(
-      onRefresh: () async => _loadAll(),
+      onRefresh: () async => _loadAll(_resolveAccountId()),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -83,7 +111,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   '${_greeting()}, $firstName',
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 const Text(
@@ -100,10 +131,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Overview (KPI grid)
-                if (dash.summaryStatus == LoadStatus.loading && dash.summary == null)
-                  const Padding(padding: EdgeInsets.only(top: 20), child: LoadingView())
+                if (dash.summaryStatus == LoadStatus.loading &&
+                    dash.summary == null)
+                  const Padding(
+                      padding: EdgeInsets.only(top: 20), child: LoadingView())
                 else if (dash.summaryStatus == LoadStatus.error)
-                  ErrorView(message: dash.summaryError ?? 'Failed to load dashboard.', onRetry: _loadAll)
+                  ErrorView(
+                      message: dash.summaryError ?? 'Failed to load dashboard.',
+                      onRetry: () => _loadAll(_resolveAccountId()))
                 else if (dash.summary != null) ...[
                   const _SectionLabel('Overview'),
                   const SizedBox(height: 10),
@@ -167,7 +202,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 10),
                 RecentAlertsCard(
                   alerts: dash.dbAlerts?.alerts ?? [],
-                  loading: dash.dbAlertsStatus == LoadStatus.loading && dash.dbAlerts == null,
+                  loading: dash.dbAlertsStatus == LoadStatus.loading &&
+                      dash.dbAlerts == null,
                 ),
                 const SizedBox(height: 24),
 
@@ -176,7 +212,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 10),
                 FleetUtilizationCard(
                   data: dash.utilization,
-                  loading: dash.utilizationStatus == LoadStatus.loading && dash.utilization == null,
+                  loading: dash.utilizationStatus == LoadStatus.loading &&
+                      dash.utilization == null,
                 ),
                 const SizedBox(height: 24),
 
@@ -185,7 +222,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 10),
                 TopDistanceCard(
                   data: dash.topDistance,
-                  loading: dash.topDistanceStatus == LoadStatus.loading && dash.topDistance.isEmpty,
+                  loading: dash.topDistanceStatus == LoadStatus.loading &&
+                      dash.topDistance.isEmpty,
                   onTapItem: (TopDistanceItem d) {
                     if (d.imei != null) context.go('/tracking?imei=${d.imei}');
                   },
@@ -199,7 +237,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 FleetDevicesSummaryCard(
                   liveCount: dash.vtsDevices.length,
                   unreachableCount: dash.unreachableDevices.length,
-                  loading: dash.summaryStatus == LoadStatus.loading && dash.vtsDevices.isEmpty,
+                  loading: dash.summaryStatus == LoadStatus.loading &&
+                      dash.vtsDevices.isEmpty,
                   onViewAll: () => context.go('/vehicles'),
                 ),
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
+import '../../providers/selected_account_provider.dart';
 import '../../models/imei_option.dart';
 import '../../models/track_point.dart';
 import '../../providers/auth_provider.dart';
@@ -29,7 +30,8 @@ double _easeInOut(double t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 // formula (the JS version prefers L.GeometryUtil.bearing when available,
 // falling back to this same math - using the math directly here since
 // there's no Leaflet dependency to check for).
-double _calcBearing(double fromLat, double fromLng, double toLat, double toLng) {
+double _calcBearing(
+    double fromLat, double fromLng, double toLat, double toLng) {
   final phi1 = fromLat * pi / 180;
   final phi2 = toLat * pi / 180;
   final deltaLambda = (toLng - fromLng) * pi / 180;
@@ -74,7 +76,8 @@ class TrackPlayScreen extends StatefulWidget {
   State<TrackPlayScreen> createState() => _TrackPlayScreenState();
 }
 
-class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProviderStateMixin {
+class _TrackPlayScreenState extends State<TrackPlayScreen>
+    with SingleTickerProviderStateMixin {
   final _mapController = MapController();
 
   List<ImeiOption> _imeiList = [];
@@ -119,9 +122,13 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
 
   Future<void> _loadImeis() async {
     setState(() => _imeiLoading = true);
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
+    final accountId =
+        context.read<SelectedAccountProvider>().selectedAccount?.id ??
+            context.read<AuthProvider>().user?.accountId ??
+            '1';
     try {
-      final list = await context.read<ReportsRepository>().getImeiDropdown(accountId);
+      final list =
+          await context.read<ReportsRepository>().getImeiDropdown(accountId);
       setState(() {
         _imeiList = list;
         _imeiLoading = false;
@@ -158,11 +165,13 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (date == null || !mounted) return;
-    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(base));
+    final time = await showTimePicker(
+        context: context, initialTime: TimeOfDay.fromDateTime(base));
     if (time == null) return;
     setState(() {
       _quick = null;
-      final combined = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      final combined =
+          DateTime(date.year, date.month, date.day, time.hour, time.minute);
       if (isFrom) {
         _from = combined;
       } else {
@@ -197,11 +206,12 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
     });
     _stopAnimation();
     try {
-      final points = await context.read<ReportsRepository>().getTrackPlayHistory(
-            imei: _selectedVeh!.imei,
-            startTime: _from.toUtc().toIso8601String(),
-            endTime: _to.toUtc().toIso8601String(),
-          );
+      final points =
+          await context.read<ReportsRepository>().getTrackPlayHistory(
+                imei: _selectedVeh!.imei,
+                startTime: _from.toUtc().toIso8601String(),
+                endTime: _to.toUtc().toIso8601String(),
+              );
       if (points.isEmpty) {
         setState(() {
           _error = 'No track data found for the selected period.';
@@ -209,13 +219,16 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
         });
         return;
       }
-      final sorted = [...points]..sort((a, b) => (_parseTs(a.ts) ?? DateTime(1970)).compareTo(_parseTs(b.ts) ?? DateTime(1970)));
+      final sorted = [...points]..sort((a, b) =>
+          (_parseTs(a.ts) ?? DateTime(1970))
+              .compareTo(_parseTs(b.ts) ?? DateTime(1970)));
       setState(() {
         _vehicleData = sorted;
         _showHistory = true;
         _loading = false;
       });
-      final withLoc = sorted.where((p) => p.lat != null && p.lng != null).toList();
+      final withLoc =
+          sorted.where((p) => p.lat != null && p.lng != null).toList();
       if (withLoc.isNotEmpty) {
         _mapController.fitCamera(
           CameraFit.coordinates(
@@ -256,7 +269,9 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
       _isPlaying = true;
       _isPaused = false;
     });
-    final startIdx = (_currentIdx > 0 && _currentIdx < _vehicleData.length - 1) ? _currentIdx : 0;
+    final startIdx = (_currentIdx > 0 && _currentIdx < _vehicleData.length - 1)
+        ? _currentIdx
+        : 0;
     _currentIdx = startIdx;
     final p = _vehicleData[startIdx];
     if (p.lat != null && p.lng != null) {
@@ -279,20 +294,25 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
     }
     final from = _vehicleData[idx];
     final to = _vehicleData[idx + 1];
-    if (from.lat == null || from.lng == null || to.lat == null || to.lng == null) {
+    if (from.lat == null ||
+        from.lng == null ||
+        to.lat == null ||
+        to.lng == null) {
       _currentIdx = idx + 1;
       _animateSegment(_currentIdx);
       return;
     }
 
     final fromBearing = idx > 0 && _vehicleData[idx - 1].lat != null
-        ? _calcBearing(_vehicleData[idx - 1].lat!, _vehicleData[idx - 1].lng!, from.lat!, from.lng!)
+        ? _calcBearing(_vehicleData[idx - 1].lat!, _vehicleData[idx - 1].lng!,
+            from.lat!, from.lng!)
         : 0.0;
     final toBearing = _calcBearing(from.lat!, from.lng!, to.lat!, to.lng!);
 
     final durationMs = (600 / _speed).clamp(50, 5000).round();
     _segmentController?.dispose();
-    _segmentController = AnimationController(duration: Duration(milliseconds: durationMs), vsync: this);
+    _segmentController = AnimationController(
+        duration: Duration(milliseconds: durationMs), vsync: this);
     _segmentController!.addListener(() {
       final t = _segmentController!.value;
       final e = _easeInOut(t);
@@ -370,9 +390,12 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final filtered = _filteredData;
     final playing = _isPlaying && !_isPaused;
-    final progressPct = (_highlightIdx != null && _vehicleData.length > 1) ? ((_highlightIdx! / (_vehicleData.length - 1)) * 100).round() : 0;
+    final progressPct = (_highlightIdx != null && _vehicleData.length > 1)
+        ? ((_highlightIdx! / (_vehicleData.length - 1)) * 100).round()
+        : 0;
 
-    final withLoc = _vehicleData.where((p) => p.lat != null && p.lng != null).toList();
+    final withLoc =
+        _vehicleData.where((p) => p.lat != null && p.lng != null).toList();
     final polyline = withLoc.map((p) => LatLng(p.lat!, p.lng!)).toList();
 
     return Column(
@@ -382,7 +405,8 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Track Play', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const Text('Track Play',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               ImeiSelectField(
                 options: _imeiList,
@@ -403,14 +427,16 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => _pickDateTime(true),
-                      child: Text('From: ${_fmtShort(_from)}', style: const TextStyle(fontSize: 11)),
+                      child: Text('From: ${_fmtShort(_from)}',
+                          style: const TextStyle(fontSize: 11)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => _pickDateTime(false),
-                      child: Text('To: ${_fmtShort(_to)}', style: const TextStyle(fontSize: 11)),
+                      child: Text('To: ${_fmtShort(_to)}',
+                          style: const TextStyle(fontSize: 11)),
                     ),
                   ),
                 ],
@@ -428,12 +454,20 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                       )),
                   const Spacer(),
                   ElevatedButton.icon(
-                    onPressed: _loading || _selectedVeh == null ? null : _submit,
+                    onPressed:
+                        _loading || _selectedVeh == null ? null : _submit,
                     icon: _loading
-                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.search, size: 14),
-                    label: Text(_loading ? 'Loading\u2026' : 'Get Track', style: const TextStyle(fontSize: 11)),
-                    style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                    label: Text(_loading ? 'Loading\u2026' : 'Get Track',
+                        style: const TextStyle(fontSize: 11)),
+                    style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8)),
                   ),
                 ],
               ),
@@ -441,8 +475,12 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0xFFFFF1F2), borderRadius: BorderRadius.circular(8)),
-                  child: Text(_error!, style: const TextStyle(color: Color(0xFFE11D48), fontSize: 11)),
+                  decoration: BoxDecoration(
+                      color: const Color(0xFFFFF1F2),
+                      borderRadius: BorderRadius.circular(8)),
+                  child: Text(_error!,
+                      style: const TextStyle(
+                          color: Color(0xFFE11D48), fontSize: 11)),
                 ),
               ],
             ],
@@ -453,15 +491,20 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
             children: [
               FlutterMap(
                 mapController: _mapController,
-                options: const MapOptions(initialCenter: _indiaCenter, initialZoom: 5),
+                options: const MapOptions(
+                    initialCenter: _indiaCenter, initialZoom: 5),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.eyeoty.mobile',
                   ),
                   if (polyline.length > 1)
                     PolylineLayer(polylines: [
-                      Polyline(points: polyline, color: const Color(0xFF2563EB), strokeWidth: 4),
+                      Polyline(
+                          points: polyline,
+                          color: const Color(0xFF2563EB),
+                          strokeWidth: 4),
                     ]),
                   MarkerLayer(markers: [
                     if (polyline.isNotEmpty)
@@ -481,19 +524,26 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                     // Only STOP/IDLE point markers — MOTION points cover
                     // the whole polyline and would hide the route line,
                     // matching the original's own reasoning.
-                    if (!(_segmentController?.isAnimating ?? false) && !_isPaused)
-                      ...filtered.where((r) => r.status != 'MOTION' && r.lat != null && r.lng != null).map((r) => Marker(
-                            point: LatLng(r.lat!, r.lng!),
-                            width: 10,
-                            height: 10,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _statusFg(r.status),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 1.5),
-                              ),
-                            ),
-                          )),
+                    if (!(_segmentController?.isAnimating ?? false) &&
+                        !_isPaused)
+                      ...filtered
+                          .where((r) =>
+                              r.status != 'MOTION' &&
+                              r.lat != null &&
+                              r.lng != null)
+                          .map((r) => Marker(
+                                point: LatLng(r.lat!, r.lng!),
+                                width: 10,
+                                height: 10,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _statusFg(r.status),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.white, width: 1.5),
+                                  ),
+                                ),
+                              )),
                     if (_markerLat != null && _markerLng != null)
                       Marker(
                         point: LatLng(_markerLat!, _markerLng!),
@@ -506,9 +556,14 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                               color: const Color(0xFF2563EB),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4)],
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 4)
+                              ],
                             ),
-                            child: const Icon(Icons.navigation, color: Colors.white, size: 18),
+                            child: const Icon(Icons.navigation,
+                                color: Colors.white, size: 18),
                           ),
                         ),
                       ),
@@ -526,7 +581,9 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
         ),
         if (_showHistory && filtered.isNotEmpty)
           Container(
-            decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.grey.shade200))),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.shade200))),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +604,9 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text('Speed: ${_speed}x', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    Text('Speed: ${_speed}x',
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w700)),
                     Expanded(
                       child: Slider(
                         value: _speed,
@@ -564,22 +623,34 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: _vehicleData.length < 2 ? null : _togglePlay,
-                        icon: Icon(playing ? Icons.pause : Icons.play_arrow, size: 16),
-                        label: Text(playing ? 'Pause' : (_isPaused ? 'Resume' : 'Play'), style: const TextStyle(fontSize: 12)),
-                        style: ElevatedButton.styleFrom(backgroundColor: playing ? const Color(0xFFF59E0B) : const Color(0xFF10B981)),
+                        icon: Icon(playing ? Icons.pause : Icons.play_arrow,
+                            size: 16),
+                        label: Text(
+                            playing ? 'Pause' : (_isPaused ? 'Resume' : 'Play'),
+                            style: const TextStyle(fontSize: 12)),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: playing
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFF10B981)),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: (_segmentController != null || _isPaused) ? _stopAnimation : null,
-                        icon: const Icon(Icons.stop, size: 16, color: Color(0xFFEF4444)),
-                        label: const Text('Stop', style: TextStyle(fontSize: 12, color: Color(0xFFEF4444))),
+                        onPressed: (_segmentController != null || _isPaused)
+                            ? _stopAnimation
+                            : null,
+                        icon: const Icon(Icons.stop,
+                            size: 16, color: Color(0xFFEF4444)),
+                        label: const Text('Stop',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFFEF4444))),
                       ),
                     ),
                     const SizedBox(width: 8),
                     FilterChip(
-                      label: const Text('Follow', style: TextStyle(fontSize: 10)),
+                      label:
+                          const Text('Follow', style: TextStyle(fontSize: 10)),
                       selected: _follow,
                       onSelected: (v) => setState(() => _follow = v),
                     ),
@@ -591,11 +662,16 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(3),
-                        child: LinearProgressIndicator(value: progressPct / 100, minHeight: 5, backgroundColor: Colors.grey.shade200),
+                        child: LinearProgressIndicator(
+                            value: progressPct / 100,
+                            minHeight: 5,
+                            backgroundColor: Colors.grey.shade200),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('$progressPct%', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                    Text('$progressPct%',
+                        style:
+                            const TextStyle(fontSize: 10, color: Colors.grey)),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -604,23 +680,35 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      _statCell('Speed', '${_playInfo?.speed ?? _vehicleData.first.speed} km/h'),
-                      _statCell('Status', _playInfo?.status ?? _vehicleData.first.status),
-                      _statCell('Time', _playInfo?.ts != null ? _fmtTs(_playInfo!.ts) : '\u2014'),
-                      _statCell('Lat', _playInfo?.lat?.toStringAsFixed(5) ?? '\u2014'),
-                      _statCell('Lng', _playInfo?.lng?.toStringAsFixed(5) ?? '\u2014'),
+                      _statCell('Speed',
+                          '${_playInfo?.speed ?? _vehicleData.first.speed} km/h'),
+                      _statCell('Status',
+                          _playInfo?.status ?? _vehicleData.first.status),
+                      _statCell(
+                          'Time',
+                          _playInfo?.ts != null
+                              ? _fmtTs(_playInfo!.ts)
+                              : '\u2014'),
+                      _statCell('Lat',
+                          _playInfo?.lat?.toStringAsFixed(5) ?? '\u2014'),
+                      _statCell('Lng',
+                          _playInfo?.lng?.toStringAsFixed(5) ?? '\u2014'),
                     ],
                   ),
                 ),
                 const SizedBox(height: 6),
                 TextButton(
                   onPressed: () => setState(() => _historyOpen = !_historyOpen),
-                  child: Text('${_historyOpen ? 'Hide' : 'Show'} History (${filtered.length})', style: const TextStyle(fontSize: 11)),
+                  child: Text(
+                      '${_historyOpen ? 'Hide' : 'Show'} History (${filtered.length})',
+                      style: const TextStyle(fontSize: 11)),
                 ),
                 if (_historyOpen)
                   Container(
                     constraints: const BoxConstraints(maxHeight: 160),
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade200), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(8)),
                     child: ListView.builder(
                       shrinkWrap: true,
                       itemCount: filtered.length,
@@ -630,11 +718,14 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
                         return ListTile(
                           dense: true,
                           tileColor: active ? const Color(0xFFECFEFF) : null,
-                          title: Text('${_fmtTs(rec.ts)} \u2014 ${rec.status} @ ${rec.speed} km/h', style: const TextStyle(fontSize: 11)),
+                          title: Text(
+                              '${_fmtTs(rec.ts)} \u2014 ${rec.status} @ ${rec.speed} km/h',
+                              style: const TextStyle(fontSize: 11)),
                           onTap: () {
                             setState(() => _highlightIdx = i);
                             if (rec.lat != null && rec.lng != null) {
-                              _mapController.move(LatLng(rec.lat!, rec.lng!), 16);
+                              _mapController.move(
+                                  LatLng(rec.lat!, rec.lng!), 16);
                             }
                           },
                         );
@@ -651,10 +742,16 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
   Widget _badge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10), boxShadow: [
-        BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4),
-      ]),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3), blurRadius: 4),
+          ]),
+      child: Text(text,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
     );
   }
 
@@ -663,14 +760,20 @@ class _TrackPlayScreenState extends State<TrackPlayScreen> with SingleTickerProv
       width: 90,
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade100), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(8)),
       alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis, maxLines: 1),
+          Text(value,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
+          Text(label,
+              style: TextStyle(fontSize: 9, color: Colors.grey.shade500)),
         ],
       ),
     );

@@ -5,6 +5,7 @@ import '../../core/utils/load_status.dart';
 import '../../core/fleet_intelligence/agent_meta.dart';
 import '../../providers/fleet_intelligence_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/selected_account_provider.dart';
 import '../../models/fleet_scan_result.dart';
 import '../../widgets/fleet_intelligence/score_ring.dart';
 import '../../widgets/fleet_intelligence/stat_tile.dart';
@@ -20,7 +21,8 @@ class FleetIntelligenceScreen extends StatefulWidget {
   const FleetIntelligenceScreen({super.key});
 
   @override
-  State<FleetIntelligenceScreen> createState() => _FleetIntelligenceScreenState();
+  State<FleetIntelligenceScreen> createState() =>
+      _FleetIntelligenceScreenState();
 }
 
 class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
@@ -31,10 +33,20 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
   String _agentFilter = 'all';
   String? _codeFilter;
   String _search = '';
+  String? _lastAccountId;
+
+  String _resolveAccountId() {
+    final selected =
+        context.read<SelectedAccountProvider>().selectedAccount?.id;
+    return selected ?? context.read<AuthProvider>().user?.accountId ?? '1';
+  }
 
   void _runScan({bool isRefetch = false}) {
-    final accountId = context.read<AuthProvider>().user?.accountId ?? '1';
-    context.read<FleetIntelligenceProvider>().runScan(accountId, isRefetch: isRefetch);
+    final accountId = _resolveAccountId();
+    _lastAccountId = accountId;
+    context
+        .read<FleetIntelligenceProvider>()
+        .runScan(accountId, isRefetch: isRefetch);
   }
 
   @override
@@ -53,12 +65,14 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _findingsKey.currentContext;
       if (ctx != null) {
-        Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
       }
     });
   }
 
-  void _focusFindings({String severity = 'all', String agent = 'all', String? code}) {
+  void _focusFindings(
+      {String severity = 'all', String agent = 'all', String? code}) {
     setState(() {
       _sevFilter = severity;
       _agentFilter = agent;
@@ -98,11 +112,25 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // context.watch subscribes this build to SelectedAccountProvider, so
+    // Flutter re-runs build() the instant the dropdown selection changes
+    // — no manual addListener/removeListener bookkeeping that can go
+    // stale across route transitions or hot reload.
+    final selectedId =
+        context.watch<SelectedAccountProvider>().selectedAccount?.id;
+    if (selectedId != null && selectedId != _lastAccountId) {
+      _lastAccountId = selectedId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _runScan());
+    }
+
     final fi = context.watch<FleetIntelligenceProvider>();
     final scan = fi.scan;
     final findings = scan?.findings ?? [];
     final filtered = _filtered(findings);
-    final hasActiveFilter = _sevFilter != 'all' || _agentFilter != 'all' || _codeFilter != null || _search.isNotEmpty;
+    final hasActiveFilter = _sevFilter != 'all' ||
+        _agentFilter != 'all' ||
+        _codeFilter != null ||
+        _search.isNotEmpty;
 
     return RefreshIndicator(
       onRefresh: () async => _runScan(isRefetch: true),
@@ -120,21 +148,30 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
-                onPressed: fi.isRefetching ? null : () => _runScan(isRefetch: true),
+                onPressed:
+                    fi.isRefetching ? null : () => _runScan(isRefetch: true),
                 icon: fi.isRefetching
-                    ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.refresh, size: 14),
-                label: Text(fi.isRefetching ? 'Scanning' : 'Re-scan', style: const TextStyle(fontSize: 11)),
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                label: Text(fi.isRefetching ? 'Scanning' : 'Re-scan',
+                    style: const TextStyle(fontSize: 11)),
+                style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8)),
               ),
             ],
           ),
           const SizedBox(height: 16),
-
           if (fi.status == LoadStatus.loading && scan == null)
-            const Padding(padding: EdgeInsets.only(top: 40), child: LoadingView())
+            const Padding(
+                padding: EdgeInsets.only(top: 40), child: LoadingView())
           else if (fi.status == LoadStatus.error && scan == null)
-            ErrorView(message: fi.errorMessage ?? 'Fleet Intelligence scan failed.', onRetry: _runScan)
+            ErrorView(
+                message: fi.errorMessage ?? 'Fleet Intelligence scan failed.',
+                onRetry: _runScan)
           else if (scan != null) ...[
             GridView.count(
               shrinkWrap: true,
@@ -155,14 +192,18 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                         'Data Quality Score',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${scan.summary.devicesScanned} devices scanned',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                        style: TextStyle(
+                            fontSize: 10, color: Colors.grey.shade400),
                       ),
                     ],
                   ),
@@ -174,7 +215,8 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                     bg: Color(0xFFFFF1F2),
                   ),
                   onTap: () => _focusFindings(severity: 'critical'),
-                  content: SummaryStatText(title: 'Critical', value: '${scan.summary.critical}'),
+                  content: SummaryStatText(
+                      title: 'Critical', value: '${scan.summary.critical}'),
                 ),
                 SummaryStatCard(
                   leading: const SummaryStatIcon(
@@ -183,7 +225,8 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                     bg: Color(0xFFFFFBEB),
                   ),
                   onTap: () => _focusFindings(severity: 'warning'),
-                  content: SummaryStatText(title: 'Warnings', value: '${scan.summary.warning}'),
+                  content: SummaryStatText(
+                      title: 'Warnings', value: '${scan.summary.warning}'),
                 ),
                 SummaryStatCard(
                   leading: const SummaryStatIcon(
@@ -192,7 +235,9 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                     bg: Color(0xFFEFF6FF),
                   ),
                   onTap: () => _focusFindings(),
-                  content: SummaryStatText(title: 'Total Findings', value: '${scan.summary.totalFindings}'),
+                  content: SummaryStatText(
+                      title: 'Total Findings',
+                      value: '${scan.summary.totalFindings}'),
                 ),
               ],
             ),
@@ -204,12 +249,20 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
               agentKey: 'data-quality',
               loading: false,
               onAgentTap: () => _focusFindings(agent: 'data-quality'),
-              onStatTap: (code) => _focusFindings(agent: 'data-quality', code: code),
+              onStatTap: (code) =>
+                  _focusFindings(agent: 'data-quality', code: code),
               stats: [
-                AgentStatRow('Corrupt timestamps', '${scan.qualityStats.corruptTimestamp}', code: 'CORRUPT_TIMESTAMP'),
-                AgentStatRow('Ignition mismatches', '${scan.qualityStats.ignContradiction}', code: 'IGN_CONTRADICTION'),
-                AgentStatRow('Invalid coords', '${scan.qualityStats.invalidCoords}', code: 'INVALID_COORDS'),
-                AgentStatRow('Duplicates', '${scan.qualityStats.duplicates}', code: 'DUPLICATE'),
+                AgentStatRow('Corrupt timestamps',
+                    '${scan.qualityStats.corruptTimestamp}',
+                    code: 'CORRUPT_TIMESTAMP'),
+                AgentStatRow('Ignition mismatches',
+                    '${scan.qualityStats.ignContradiction}',
+                    code: 'IGN_CONTRADICTION'),
+                AgentStatRow(
+                    'Invalid coords', '${scan.qualityStats.invalidCoords}',
+                    code: 'INVALID_COORDS'),
+                AgentStatRow('Duplicates', '${scan.qualityStats.duplicates}',
+                    code: 'DUPLICATE'),
               ],
             ),
             const SizedBox(height: 10),
@@ -231,8 +284,10 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
               stats: [
                 AgentStatRow('Raw alerts', '${scan.priorityStats.rawAlerts}'),
                 AgentStatRow('Bursts', '${scan.priorityStats.bursts}'),
-                AgentStatRow('Noise removed', '${scan.priorityStats.collapsed}'),
-                AgentStatRow('High urgency', '${scan.priorityStats.high + scan.priorityStats.critical}'),
+                AgentStatRow(
+                    'Noise removed', '${scan.priorityStats.collapsed}'),
+                AgentStatRow('High urgency',
+                    '${scan.priorityStats.high + scan.priorityStats.critical}'),
               ],
             ),
 
@@ -247,17 +302,25 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     spacing: 6,
                     children: [
-                      Text('Findings (${filtered.length})', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                      Text('Findings (${filtered.length})',
+                          style: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w800)),
                       if (_agentFilter != 'all')
-                        _chip(agentMetaFor(_agentFilter).label, const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
+                        _chip(agentMetaFor(_agentFilter).label,
+                            const Color(0xFFEFF6FF), const Color(0xFF2563EB)),
                       if (_codeFilter != null)
-                        _chip(_codeFilter!.replaceAll('_', ' ').toLowerCase(), Colors.grey.shade100, Colors.grey.shade700),
+                        _chip(_codeFilter!.replaceAll('_', ' ').toLowerCase(),
+                            Colors.grey.shade100, Colors.grey.shade700),
                       if (hasActiveFilter)
                         TextButton.icon(
                           onPressed: _clearFilters,
                           icon: const Icon(Icons.close, size: 12),
-                          label: const Text('clear', style: TextStyle(fontSize: 11)),
-                          style: TextButton.styleFrom(foregroundColor: Colors.grey.shade400, padding: EdgeInsets.zero, minimumSize: Size.zero),
+                          label: const Text('clear',
+                              style: TextStyle(fontSize: 11)),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade400,
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero),
                         ),
                     ],
                   ),
@@ -298,7 +361,9 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
             if (filtered.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 20),
-                child: EmptyView(message: 'No findings \u2014 fleet data looks clean.', icon: Icons.verified_outlined),
+                child: EmptyView(
+                    message: 'No findings \u2014 fleet data looks clean.',
+                    icon: Icons.verified_outlined),
               )
             else
               ...filtered.take(200).map(
@@ -306,7 +371,9 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: FindingCard(
                         finding: f,
-                        onTap: f.imei != null ? () => context.go('/tracking?imei=${f.imei}') : null,
+                        onTap: f.imei != null
+                            ? () => context.go('/tracking?imei=${f.imei}')
+                            : null,
                       ),
                     ),
                   ),
@@ -318,7 +385,10 @@ class _FleetIntelligenceScreenState extends State<FleetIntelligenceScreen> {
 
   Widget _chip(String label, Color bg, Color fg) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-        child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+        child: Text(label,
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
       );
 }
