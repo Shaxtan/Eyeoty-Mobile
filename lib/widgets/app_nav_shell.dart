@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'logo.dart';
+import 'account_selector_button.dart';
+import '../providers/selected_account_provider.dart';
 
 /// Responsive navigation shell wrapping every authenticated route.
 ///
@@ -10,16 +13,28 @@ import 'logo.dart';
 ///   persistent left sidebar WITHOUT simply stretching the mobile
 ///   layout across the screen.
 ///
-/// This is the ONLY Scaffold in the authenticated part of the app -
+/// This is the ONLY Scaffold in the authenticated part of the app —
 /// individual screens (DashboardScreen, AlertsScreen, etc.) return
 /// plain body content, not their own Scaffold/AppBar, so this shell's
 /// single AppBar + Drawer + BottomNavigationBar work correctly together.
-class AppNavShell extends StatelessWidget {
+///
+/// Converted from Stateless -> Stateful in this pass: this is the one
+/// place guaranteed to build only once a user is authenticated (it's
+/// the ShellRoute wrapper for every logged-in route), so it's the
+/// natural, one-time trigger point for SelectedAccountProvider's
+/// fetch-once loadAccounts() - matching where the web app's account
+/// store gets initialized.
+class AppNavShell extends StatefulWidget {
   final Widget child;
   final String currentPath;
 
   const AppNavShell({super.key, required this.child, required this.currentPath});
 
+  @override
+  State<AppNavShell> createState() => _AppNavShellState();
+}
+
+class _AppNavShellState extends State<AppNavShell> {
   static const _primaryDestinations = [
     _NavItem('/dashboard', Icons.dashboard_outlined, 'Dashboard'),
     _NavItem('/tracking', Icons.near_me_outlined, 'Tracking'),
@@ -45,8 +60,16 @@ class AppNavShell extends StatelessWidget {
 
   static final List<_NavItem> _all = [..._primaryDestinations, ..._moreDestinations];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<SelectedAccountProvider>().loadAccounts();
+    });
+  }
+
   int _selectedPrimaryIndex() {
-    final i = _primaryDestinations.indexWhere((d) => currentPath.startsWith(d.path));
+    final i = _primaryDestinations.indexWhere((d) => widget.currentPath.startsWith(d.path));
     return i;
   }
 
@@ -60,11 +83,14 @@ class AppNavShell extends StatelessWidget {
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 900;
     final selected = _selectedPrimaryIndex();
-    final body = SafeArea(child: child);
+    final body = SafeArea(child: widget.child);
 
     if (isWide) {
       return Scaffold(
-        appBar: AppBar(title: Text(_titleFor(currentPath))),
+        appBar: AppBar(
+          title: Text(_titleFor(widget.currentPath)),
+          actions: const [AccountSelectorButton()],
+        ),
         body: Row(
           children: [
             NavigationRail(
@@ -90,7 +116,7 @@ class AppNavShell extends StatelessWidget {
                       dense: true,
                       leading: Icon(d.icon, size: 20),
                       title: Text(d.label, style: const TextStyle(fontSize: 13)),
-                      selected: currentPath.startsWith(d.path),
+                      selected: widget.currentPath.startsWith(d.path),
                       onTap: () => context.go(d.path),
                     ),
                 ],
@@ -104,7 +130,10 @@ class AppNavShell extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titleFor(currentPath))),
+      appBar: AppBar(
+        title: Text(_titleFor(widget.currentPath)),
+        actions: const [AccountSelectorButton()],
+      ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -124,7 +153,7 @@ class AppNavShell extends StatelessWidget {
               ListTile(
                 leading: Icon(d.icon),
                 title: Text(d.label),
-                selected: currentPath.startsWith(d.path),
+                selected: widget.currentPath.startsWith(d.path),
                 onTap: () {
                   Navigator.pop(context);
                   context.go(d.path);

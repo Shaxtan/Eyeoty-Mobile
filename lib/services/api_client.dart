@@ -17,6 +17,15 @@ class ApiClient {
   final AuthService _authService;
   ApiClient(this._authService);
 
+  // No call in this app had a timeout before this - if a request never
+  // gets a response (hung connection, silent CORS failure, backend not
+  // responding), the returned Future just waits forever and whatever
+  // was loading it stays stuck in a loading state indefinitely. This
+  // turns that into a visible, catchable failure after a generous
+  // window instead. Raise this if a specific endpoint is known to
+  // legitimately take longer.
+  static const _timeout = Duration(seconds: 15);
+
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final base = Uri.parse(Env.apiBaseUrl);
     return base.replace(
@@ -34,7 +43,10 @@ class ApiClient {
   }
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) async {
-    final res = await http.get(_uri(path, query), headers: await _headers());
+    final res = await http.get(_uri(path, query), headers: await _headers()).timeout(
+          _timeout,
+          onTimeout: () => throw ApiException('Request timed out. Check your connection and try again.'),
+        );
     return _handle(res);
   }
 
@@ -43,11 +55,16 @@ class ApiClient {
     Map<String, dynamic>? body,
     Map<String, dynamic>? query,
   }) async {
-    final res = await http.post(
-      _uri(path, query),
-      headers: await _headers(),
-      body: jsonEncode(body ?? {}),
-    );
+    final res = await http
+        .post(
+          _uri(path, query),
+          headers: await _headers(),
+          body: jsonEncode(body ?? {}),
+        )
+        .timeout(
+          _timeout,
+          onTimeout: () => throw ApiException('Request timed out. Check your connection and try again.'),
+        );
     return _handle(res);
   }
 

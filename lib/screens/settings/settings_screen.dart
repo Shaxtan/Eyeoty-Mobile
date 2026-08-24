@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_mode_provider.dart';
-
+import '../../providers/selected_account_provider.dart';
 // Same role gate as the web app's SettingsPage.jsx (Super Admin and
 // Administrator both get the full admin console; everyone else gets
 // the basic personal-settings section only).
@@ -69,8 +69,11 @@ class SettingsScreen extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 20),
-        OutlinedButton.icon(
-          onPressed: () => auth.logout(),
+                OutlinedButton.icon(
+          onPressed: () {
+            context.read<SelectedAccountProvider>().reset();
+            auth.logout();
+          },
           icon: const Icon(Icons.logout, color: Colors.redAccent),
           label: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
         ),
