@@ -15,7 +15,8 @@ import '../../widgets/empty_view.dart';
 import '../../widgets/vehicle_detail_sheet.dart';
 
 const _indiaCenter = LatLng(22.5589, 75.6089);
-const _refreshInterval = Duration(minutes: 3); // matches MapPage.jsx's REFRESH_MS
+const _refreshInterval =
+    Duration(minutes: 3); // matches MapPage.jsx's REFRESH_MS
 
 /// Ported from MapPage.jsx. Mobile adaptation: the desktop's floating
 /// sidebar-over-map is replaced with a stacked map-on-top /
@@ -68,7 +69,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
     final term = _search.toLowerCase().trim();
     final list = all.where((d) {
       final matchesFilter = _filter == null || mapViewStatusOf(d) == _filter;
-      final matchesSearch = term.isEmpty || d.displayName.toLowerCase().contains(term);
+      final matchesSearch =
+          term.isEmpty || d.displayName.toLowerCase().contains(term);
       return matchesFilter && matchesSearch;
     }).toList();
 
@@ -99,12 +101,21 @@ class _MapViewScreenState extends State<MapViewScreen> {
     final filtered = _filteredSorted(all);
 
     final counts = <String, int>{'All': all.length};
-    for (final s in [MapViewStatus.motion, MapViewStatus.idle, MapViewStatus.stop, MapViewStatus.lock]) {
-      counts[mapViewStatusLabel(s)] = all.where((d) => mapViewStatusOf(d) == s).length;
+    for (final s in [
+      MapViewStatus.motion,
+      MapViewStatus.idle,
+      MapViewStatus.stop,
+      MapViewStatus.lock
+    ]) {
+      counts[mapViewStatusLabel(s)] =
+          all.where((d) => mapViewStatusOf(d) == s).length;
     }
 
-    final withLocation = all.where((d) => d.lat != null && d.lng != null).toList();
-    final center = withLocation.isNotEmpty ? LatLng(withLocation.first.lat!, withLocation.first.lng!) : _indiaCenter;
+    final withLocation =
+        all.where((d) => d.lat != null && d.lng != null).toList();
+    final center = withLocation.isNotEmpty
+        ? LatLng(withLocation.first.lat!, withLocation.first.lng!)
+        : _indiaCenter;
 
     return Column(
       children: [
@@ -142,9 +153,11 @@ class _MapViewScreenState extends State<MapViewScreen> {
           ),
         ),
         const SizedBox(height: 6),
-
         if (mv.status == LoadStatus.error && all.isEmpty)
-          Expanded(child: ErrorView(message: mv.errorMessage ?? 'Failed to load map data.', onRetry: _load))
+          Expanded(
+              child: ErrorView(
+                  message: mv.errorMessage ?? 'Failed to load map data.',
+                  onRetry: _load))
         else if (mv.status == LoadStatus.loading && all.isEmpty)
           const Expanded(child: LoadingView())
         else ...[
@@ -154,15 +167,17 @@ class _MapViewScreenState extends State<MapViewScreen> {
               children: [
                 FlutterMap(
                   mapController: _mapController,
-                  options: const MapOptions(initialCenter: _indiaCenter, initialZoom: 5.5),
+                  options: MapOptions(initialCenter: center, initialZoom: 5.5),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.eyeoty.mobile',
                     ),
                     MarkerClusterLayerWidget(
                       options: MarkerClusterLayerOptions(
-                        maxClusterRadius: 60, // matches MapPage.jsx's L.markerClusterGroup config
+                        maxClusterRadius:
+                            60, // matches MapPage.jsx's L.markerClusterGroup config
                         size: const Size(40, 40),
                         markers: withLocation.map((d) {
                           final s = mapViewStatusOf(d);
@@ -179,23 +194,33 @@ class _MapViewScreenState extends State<MapViewScreen> {
                                 decoration: BoxDecoration(
                                   color: color,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border:
+                                      Border.all(color: Colors.white, width: 3),
                                   boxShadow: [
-                                    BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 4),
+                                    BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.35),
+                                        blurRadius: 4),
                                   ],
                                 ),
-                                child: const Icon(Icons.local_shipping, color: Colors.white, size: 14),
+                                child: const Icon(Icons.local_shipping,
+                                    color: Colors.white, size: 14),
                               ),
                             ),
                           );
                         }).toList(),
                         builder: (context, markers) {
                           return Container(
-                            decoration: const BoxDecoration(color: Color(0xFF2563EB), shape: BoxShape.circle),
+                            decoration: const BoxDecoration(
+                                color: Color(0xFF2563EB),
+                                shape: BoxShape.circle),
                             alignment: Alignment.center,
                             child: Text(
                               '${markers.length}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12),
                             ),
                           );
                         },
@@ -212,7 +237,10 @@ class _MapViewScreenState extends State<MapViewScreen> {
                     alignment: Alignment.center,
                     child: const Text(
                       'Loading vehicles\u2026',
-                      style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600, fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13),
                     ),
                   ),
               ],
@@ -221,7 +249,9 @@ class _MapViewScreenState extends State<MapViewScreen> {
           Expanded(
             flex: 2,
             child: filtered.isEmpty
-                ? const EmptyView(message: 'No vehicles found.', icon: Icons.local_shipping_outlined)
+                ? const EmptyView(
+                    message: 'No vehicles found.',
+                    icon: Icons.local_shipping_outlined)
                 : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: filtered.length,
@@ -235,11 +265,17 @@ class _MapViewScreenState extends State<MapViewScreen> {
                       return Container(
                         color: isActive
                             ? Colors.blue.withValues(alpha: 0.05)
-                            : (isTop ? Colors.amber.withValues(alpha: 0.05) : null),
+                            : (isTop
+                                ? Colors.amber.withValues(alpha: 0.05)
+                                : null),
                         child: ListTile(
                           onTap: () => _onVehicleTap(d),
-                          title: Text(d.displayName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                          subtitle: Text(d.lastUpdate ?? '\u2014', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                          title: Text(d.displayName,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 13)),
+                          subtitle: Text(d.lastUpdate ?? '\u2014',
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey.shade500)),
                           trailing: Container(
                             width: 24,
                             height: 24,
@@ -247,10 +283,18 @@ class _MapViewScreenState extends State<MapViewScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.grey.shade200),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 2)],
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 2)
+                              ],
                             ),
                             alignment: Alignment.center,
-                            child: Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                            child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                    color: color, shape: BoxShape.circle)),
                           ),
                         ),
                       );

@@ -28,7 +28,8 @@ class AppNavShell extends StatefulWidget {
   final Widget child;
   final String currentPath;
 
-  const AppNavShell({super.key, required this.child, required this.currentPath});
+  const AppNavShell(
+      {super.key, required this.child, required this.currentPath});
 
   @override
   State<AppNavShell> createState() => _AppNavShellState();
@@ -46,7 +47,8 @@ class _AppNavShellState extends State<AppNavShell> {
   // Drawer/"More" list on every width, satisfying "no dead-end screens"
   // even though most of these route to an honest PendingScreen for now.
   static const _moreDestinations = [
-    _NavItem('/fleet-intelligence', Icons.auto_awesome_outlined, 'Fleet Intelligence'),
+    _NavItem('/fleet-intelligence', Icons.auto_awesome_outlined,
+        'Fleet Intelligence'),
     _NavItem('/map-view', Icons.map_outlined, 'Map View'),
     _NavItem('/vehicles', Icons.local_shipping_outlined, 'Vehicles'),
     _NavItem('/trips', Icons.alt_route_outlined, 'Trips'),
@@ -58,7 +60,10 @@ class _AppNavShellState extends State<AppNavShell> {
     _NavItem('/live-load', Icons.show_chart_outlined, 'Live Load Graph'),
   ];
 
-  static final List<_NavItem> _all = [..._primaryDestinations, ..._moreDestinations];
+  static final List<_NavItem> _all = [
+    ..._primaryDestinations,
+    ..._moreDestinations
+  ];
 
   @override
   void initState() {
@@ -69,7 +74,8 @@ class _AppNavShellState extends State<AppNavShell> {
   }
 
   int _selectedPrimaryIndex() {
-    final i = _primaryDestinations.indexWhere((d) => widget.currentPath.startsWith(d.path));
+    final i = _primaryDestinations
+        .indexWhere((d) => widget.currentPath.startsWith(d.path));
     return i;
   }
 
@@ -95,10 +101,12 @@ class _AppNavShellState extends State<AppNavShell> {
           children: [
             NavigationRail(
               selectedIndex: selected == -1 ? 0 : selected,
-              onDestinationSelected: (i) => context.go(_primaryDestinations[i].path),
+              onDestinationSelected: (i) =>
+                  context.go(_primaryDestinations[i].path),
               labelType: NavigationRailLabelType.all,
               destinations: _primaryDestinations
-                  .map((d) => NavigationRailDestination(icon: Icon(d.icon), label: Text(d.label)))
+                  .map((d) => NavigationRailDestination(
+                      icon: Icon(d.icon), label: Text(d.label)))
                   .toList(),
             ),
             const VerticalDivider(width: 1),
@@ -109,13 +117,17 @@ class _AppNavShellState extends State<AppNavShell> {
                   const Padding(
                     padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: Text('MORE',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey)),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey)),
                   ),
                   for (final d in _moreDestinations)
                     ListTile(
                       dense: true,
                       leading: Icon(d.icon, size: 20),
-                      title: Text(d.label, style: const TextStyle(fontSize: 13)),
+                      title:
+                          Text(d.label, style: const TextStyle(fontSize: 13)),
                       selected: widget.currentPath.startsWith(d.path),
                       onTap: () => context.go(d.path),
                     ),
@@ -141,9 +153,9 @@ class _AppNavShellState extends State<AppNavShell> {
             Container(
               width: double.infinity,
               color: const Color(0xFF0E1A30),
-              child: SafeArea(
+              child: const SafeArea(
                 bottom: false,
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.fromLTRB(20, 18, 20, 18),
                   child: Logo(size: 20),
                 ),
@@ -167,7 +179,8 @@ class _AppNavShellState extends State<AppNavShell> {
         selectedIndex: selected == -1 ? 0 : selected,
         onDestinationSelected: (i) => context.go(_primaryDestinations[i].path),
         destinations: _primaryDestinations
-            .map((d) => NavigationDestination(icon: Icon(d.icon), label: d.label))
+            .map((d) =>
+                NavigationDestination(icon: Icon(d.icon), label: d.label))
             .toList(),
       ),
     );
