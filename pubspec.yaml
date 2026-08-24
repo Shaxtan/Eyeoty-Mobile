@@ -1,0 +1,64 @@
+name: eyeoty_mobile
+description: >
+  Eyeoty Fleet Intelligence - mobile & web companion app for the Eyeoty
+  fleet IoT platform. Converted from the existing React/Vite web
+  application, targeting the same backend API.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # State management - kept simple per project convention, no code-gen.
+  provider: ^6.1.2
+
+  # Routing - supports web deep links and auth redirect guards natively.
+  go_router: ^14.2.0
+
+  # Networking
+  http: ^1.2.1
+
+  # Token persistence - Android/iOS/Web (WebCrypto-backed on web).
+  flutter_secure_storage: ^9.2.2
+
+  # Maps - Leaflet-equivalent for Flutter, mirrors the OpenStreetMap
+  # tiles already used by the existing web app's Live Tracking / Map
+  # View / Dashboard live-map widgets.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Marker clustering for Map View - real device counts run 1500+, so
+  # clustering matters for both usability and performance on a phone,
+  # matching the web app's own use of leaflet.markercluster.
+  flutter_map_marker_cluster: ^1.3.6
+
+  # Fleet Utilization trend line - genuine chart, not decorative.
+  fl_chart: ^0.68.0
+
+  # "Open in Google Maps" external link from the vehicle detail sheet.
+  url_launcher: ^6.3.0
+
+  # Manrope font - matches the existing web app's design system
+  # ("Font: Manrope for app UI"). Fetches from Google's font CDN at
+  # runtime on web; needs internet access on the machine running the app.
+  google_fonts: ^6.2.1
+
+  # Renders the real Eyeoty signal-glyph SVG pixel-for-pixel (rather
+  # than a hand-reconstructed CustomPainter of its 4 concentric arcs,
+  # which risks visible inaccuracy I can't verify without running it).
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  # assets:
+  #   - assets/images/
