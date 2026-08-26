@@ -390,8 +390,9 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
                               reservedSize: 26,
                               getTitlesWidget: (v, m) {
                                 final i = v.toInt();
-                                if (i < 0 || i >= chartRecords.length)
+                                if (i < 0 || i >= chartRecords.length) {
                                   return const SizedBox.shrink();
+                                }
                                 final r = chartRecords[i];
                                 final label = _isSingleDay
                                     ? '${r.hr}h'

@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../models/top_distance_item.dart';
 
-const _rankColors = [
-  Color(0xFF1A73E8),
-  Color(0xFF2E7EED),
-  Color(0xFF4A8FF2),
-  Color(0xFF6AA4F5),
-  Color(0xFF8BB9F8),
-];
+// Bar shade for each ranked row is interpolated between _rankStart
+// (darkest — rank 1) and _rankEnd (lightest — last rank), so the fade
+// is smooth end-to-end and stays consistent no matter how many rows
+// the endpoint returns. Previously a hardcoded 5-shade palette was
+// indexed with `i % palette.length`, which made the shade reset back
+// to darkest at position 6 and give a stripe/rainbow effect.
+const _rankStart = Color(0xFF1A73E8); // top rank — deepest blue
+const _rankEnd = Color(0xFFC7DBF8); // bottom rank — softest blue
+
+Color _rankColorFor(int index, int total) {
+  if (total <= 1) return _rankStart;
+  final t = index / (total - 1); // 0.0 for rank 1 → 1.0 for last rank
+  return Color.lerp(_rankStart, _rankEnd, t) ?? _rankStart;
+}
 
 /// Matches TopDistanceCard.jsx's ranked list. The web version pairs a
 /// bar chart with this list; on mobile a single ranked list with an
@@ -29,7 +36,9 @@ class TopDistanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxVal = data.isEmpty ? 1 : data.map((d) => d.valueKm).reduce((a, b) => a > b ? a : b);
+    final maxVal = data.isEmpty
+        ? 1
+        : data.map((d) => d.valueKm).reduce((a, b) => a > b ? a : b);
 
     return Card(
       child: Padding(
@@ -40,12 +49,18 @@ class TopDistanceCard extends StatelessWidget {
             Row(
               children: [
                 const Expanded(
-                  child: Text('Top by Distance', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                  child: Text('Top by Distance',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
                 ),
-                TextButton(onPressed: onViewFullReport, child: const Text('Full Report', style: TextStyle(fontSize: 12))),
+                TextButton(
+                    onPressed: onViewFullReport,
+                    child: const Text('Full Report',
+                        style: TextStyle(fontSize: 12))),
               ],
             ),
-            const Text('Today \u2014 by vehicle', style: TextStyle(fontSize: 11, color: Colors.grey)),
+            const Text('Today \u2014 by vehicle',
+                style: TextStyle(fontSize: 11, color: Colors.grey)),
             const SizedBox(height: 10),
             if (loading)
               const Padding(
@@ -56,15 +71,16 @@ class TopDistanceCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child:
-                      Text('No distance data for today yet.', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                  child: Text('No distance data for today yet.',
+                      style:
+                          TextStyle(color: Colors.grey.shade400, fontSize: 12)),
                 ),
               )
             else
               ...data.asMap().entries.map((entry) {
                 final i = entry.key;
                 final d = entry.value;
-                final color = _rankColors[i % _rankColors.length];
+                final color = _rankColorFor(i, data.length);
                 final widthFactor = maxVal > 0 ? d.valueKm / maxVal : 0.0;
                 return InkWell(
                   onTap: d.imei != null ? () => onTapItem(d) : null,
@@ -76,9 +92,14 @@ class TopDistanceCard extends StatelessWidget {
                         Container(
                           width: 22,
                           height: 22,
-                          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                              color: color, shape: BoxShape.circle),
                           alignment: Alignment.center,
-                          child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                          child: Text('${i + 1}',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800)),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -90,10 +111,14 @@ class TopDistanceCard extends StatelessWidget {
                                   Expanded(
                                     child: Text(d.name,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700)),
                                   ),
                                   Text('${d.valueKm} km',
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w800)),
                                 ],
                               ),
                               const SizedBox(height: 3),

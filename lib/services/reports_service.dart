@@ -20,7 +20,9 @@ class ReportsService {
     final body = json as Map<String, dynamic>;
     final data = body['data'] as Map<String, dynamic>? ?? {};
     final list = (data['imeiVehnumList'] as List<dynamic>?) ?? [];
-    return list.map((e) => ImeiOption.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => ImeiOption.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<DistanceReportResult> getDistanceReport({
@@ -35,7 +37,8 @@ class ReportsService {
     });
     final body = json as Map<String, dynamic>;
     if (body['resultCode'] != 1) {
-      throw Exception(body['message']?.toString() ?? 'Failed to fetch distance report');
+      throw Exception(
+          body['message']?.toString() ?? 'Failed to fetch distance report');
     }
     return DistanceReportResult.fromJson(body['data'] as Map<String, dynamic>);
   }
@@ -52,7 +55,9 @@ class ReportsService {
     });
     final body = json as Map<String, dynamic>;
     final list = (body['data'] as List<dynamic>?) ?? [];
-    return list.map((e) => TrackPoint.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => TrackPoint.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<WorkingHourRecord>> getWorkingHourReport({
@@ -67,7 +72,8 @@ class ReportsService {
     });
     final body = json as Map<String, dynamic>;
     if (body['resultCode'] != 1) {
-      throw Exception(body['message']?.toString() ?? 'Failed to fetch working hour report');
+      throw Exception(
+          body['message']?.toString() ?? 'Failed to fetch working hour report');
     }
     final payload = body['data'];
     List<dynamic> list;
@@ -78,7 +84,9 @@ class ReportsService {
     } else {
       list = [];
     }
-    return list.map((e) => WorkingHourRecord.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => WorkingHourRecord.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<AccountSummaryNode?> getAccountSummary({
@@ -86,9 +94,14 @@ class ReportsService {
     required String startDate,
     required String endDate,
   }) async {
+    // NOTE: accid must go through `query:`, not be embedded in the path
+    // string. See DashboardService.getUtilization() for the full
+    // explanation — Uri.replace(path: ...) percent-encodes '?' when
+    // embedded in the path, breaking the request.
     final json = await _client.post(
-      '$_accountSummaryPath?accid=$accountId',
+      _accountSummaryPath,
       body: {'startDate': startDate, 'endDate': endDate},
+      query: {'accid': accountId},
     );
     final body = json as Map<String, dynamic>;
     if (body['resultCode'] != 1) return null;

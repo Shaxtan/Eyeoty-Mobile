@@ -10,15 +10,22 @@ class RecentAlertsCard extends StatelessWidget {
   final List<DbAlert> alerts;
   final bool loading;
 
-  const RecentAlertsCard({super.key, required this.alerts, required this.loading});
+  const RecentAlertsCard(
+      {super.key, required this.alerts, required this.loading});
 
   String _subtitle(DbAlert a) {
     if (a.type == 'OVS') {
       return 'Truck ${a.vehicleNumber ?? a.imei} exceeded ${a.speed ?? '\u2014'} km/h';
     }
-    if (a.type == 'GEO') return 'Truck ${a.vehicleNumber ?? a.imei} exited zone';
-    if (a.type == 'BAT') return 'Device ${a.imei} battery at ${a.battery ?? '\u2014'}V';
-    return a.message ?? a.address ?? '${alertTypeLabel(a.type)} alert';
+    if (a.type == 'GEO') {
+      return 'Truck ${a.vehicleNumber ?? a.imei} exited zone';
+    }
+    if (a.type == 'BAT') {
+      return 'Device ${a.imei} battery at ${a.battery ?? '\u2014'}V';
+    }
+    return a.message ??
+        a.address ??
+        '${alertLabelFromMessage(a.message, a.type)} alert';
   }
 
   @override
@@ -35,10 +42,13 @@ class RecentAlertsCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Text('Recent Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                const Text('Recent Alerts',
+                    style:
+                        TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => AlertTypeListSheet.show(context, type: 'ALL', alerts: alerts),
+                  onPressed: () => AlertTypeListSheet.show(context,
+                      type: 'ALL', alerts: alerts),
                   child: const Text('View All', style: TextStyle(fontSize: 12)),
                 ),
               ],
@@ -52,12 +62,14 @@ class RecentAlertsCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
-                  child: Text('No recent alerts.', style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+                  child: Text('No recent alerts.',
+                      style:
+                          TextStyle(color: Colors.grey.shade400, fontSize: 12)),
                 ),
               )
             else
               ...top5.map((a) {
-                final meta = alertTypeMetaFor(a.type);
+                final meta = alertMetaFromMessage(a.message, a.type);
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
@@ -66,7 +78,9 @@ class RecentAlertsCard extends StatelessWidget {
                       Container(
                         width: 32,
                         height: 32,
-                        decoration: BoxDecoration(color: meta.color.withValues(alpha: 0.12), shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                            color: meta.color.withValues(alpha: 0.12),
+                            shape: BoxShape.circle),
                         child: Icon(meta.icon, size: 15, color: meta.color),
                       ),
                       const SizedBox(width: 10),
@@ -74,20 +88,24 @@ class RecentAlertsCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(meta.label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            Text(meta.label,
+                                style: const TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 2),
                             Text(
                               _subtitle(a),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                              style: TextStyle(
+                                  fontSize: 11, color: Colors.grey.shade500),
                             ),
                           ],
                         ),
                       ),
                       Text(
                         a.createdOn ?? '',
-                        style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                        style: TextStyle(
+                            fontSize: 10, color: Colors.grey.shade400),
                       ),
                     ],
                   ),
