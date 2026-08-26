@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/alerts_provider.dart';
+import 'providers/alert_triage_provider.dart';
 import 'providers/tracking_provider.dart';
 import 'providers/accounts_provider.dart';
 import 'providers/selected_account_provider.dart';
@@ -18,6 +19,7 @@ import 'repositories/tracking_repository.dart';
 import 'repositories/accounts_repository.dart';
 import 'repositories/fleet_intelligence_repository.dart';
 import 'repositories/reports_repository.dart';
+import 'repositories/loadcell_repository.dart';
 import 'services/auth_service.dart';
 import 'services/api_client.dart';
 import 'services/dashboard_service.dart';
@@ -26,6 +28,7 @@ import 'services/tracking_service.dart';
 import 'services/accounts_service.dart';
 import 'services/fleet_intelligence_service.dart';
 import 'services/reports_service.dart';
+import 'services/loadcell_service.dart';
 import 'routes/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -44,6 +47,7 @@ class _EyeotyAppState extends State<EyeotyApp> {
   late final AuthProvider _authProvider;
   late final DashboardProvider _dashboardProvider;
   late final AlertsProvider _alertsProvider;
+  late final AlertTriageProvider _alertTriageProvider;
   late final TrackingProvider _trackingProvider;
   late final AccountsProvider _accountsProvider;
   late final SelectedAccountProvider _selectedAccountProvider;
@@ -53,6 +57,7 @@ class _EyeotyAppState extends State<EyeotyApp> {
   late final AlertsRepository _alertsRepository;
   late final ReportsRepository _reportsRepository;
   late final AccountsRepository _accountsRepository;
+  late final LoadCellRepository _loadCellRepository;
   late final GoRouter _router;
 
   @override
@@ -66,11 +71,13 @@ class _EyeotyAppState extends State<EyeotyApp> {
     _alertsRepository = AlertsRepository(AlertsService(apiClient));
     _reportsRepository = ReportsRepository(ReportsService(apiClient));
     _accountsRepository = AccountsRepository(AccountsService(apiClient));
+    _loadCellRepository = LoadCellRepository(LoadCellService(apiClient));
 
     _authProvider = AuthProvider(AuthRepository(authService))..bootstrap();
     _dashboardProvider = DashboardProvider(dashboardRepository);
     _alertsProvider = AlertsProvider(_alertsRepository);
-    _trackingProvider = TrackingProvider(TrackingRepository(TrackingService(apiClient)));
+    _alertTriageProvider = AlertTriageProvider();
+    _trackingProvider = TrackingProvider(TrackingRepository(TrackingService(apiClient)), dashboardRepository);
     _accountsProvider = AccountsProvider(_accountsRepository);
     // The app-wide account switcher (Topbar's AccountSelector) - reuses
     // the same AccountsRepository instance as _accountsProvider, and
@@ -97,6 +104,7 @@ class _EyeotyAppState extends State<EyeotyApp> {
         ChangeNotifierProvider.value(value: _authProvider),
         ChangeNotifierProvider.value(value: _dashboardProvider),
         ChangeNotifierProvider.value(value: _alertsProvider),
+        ChangeNotifierProvider.value(value: _alertTriageProvider),
         ChangeNotifierProvider.value(value: _trackingProvider),
         ChangeNotifierProvider.value(value: _accountsProvider),
         ChangeNotifierProvider.value(value: _selectedAccountProvider),
@@ -113,6 +121,7 @@ class _EyeotyAppState extends State<EyeotyApp> {
         // - Working Hour Report's Account dropdown just needs the plain
         // repository call, not the ChangeNotifier wrapper.
         Provider<AccountsRepository>.value(value: _accountsRepository),
+        Provider<LoadCellRepository>.value(value: _loadCellRepository),
       ],
       child: Consumer<ThemeModeProvider>(
         builder: (context, themeModeProvider, _) {

@@ -16,6 +16,8 @@ import '../screens/reports/stoppage_report_screen.dart';
 import '../screens/reports/overspeed_report_screen.dart';
 import '../screens/reports/track_play_screen.dart';
 import '../screens/reports/working_hour_report_screen.dart';
+import '../screens/load_cell/load_cell_report_screen.dart';
+import '../screens/load_cell/live_load_screen.dart';
 import '../widgets/app_nav_shell.dart';
 import '../widgets/pending_screen.dart';
 
@@ -66,11 +68,11 @@ GoRouter buildRouter(AuthProvider authProvider) {
           // Real screen — ported from MapPage.jsx.
           GoRoute(path: '/map-view', builder: (_, __) => const MapViewScreen()),
 
-          // Real — ported from ReportsPage.jsx + 4 of its 6 sub-reports.
-          // Distance / Stoppage / Overspeed / Track Play / Working Hour
-          // are fully wired; Fuel Theft is deliberately deferred (still
-          // blocked on loadcell.service.js's real endpoints) and routes
-          // to an honest PendingScreen below rather than a dead end.
+          // Real — ported from ReportsPage.jsx + 3 of its 6 sub-reports.
+          // Distance / Stoppage / Overspeed are fully wired; Hourly,
+          // Track Play, and Fuel Theft are deliberately deferred (see
+          // the batch notes) and route to an honest PendingScreen below
+          // rather than a dead end.
           GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(path: '/reports/distance', builder: (_, __) => const DistanceReportScreen()),
           GoRoute(path: '/reports/stoppage', builder: (_, __) => const StoppageReportScreen()),
@@ -79,14 +81,18 @@ GoRouter buildRouter(AuthProvider authProvider) {
           GoRoute(path: '/reports/hourly', builder: (_, __) => const WorkingHourReportScreen()),
           GoRoute(path: '/reports/fuel-theft', builder: (_, __) => const PendingScreen(title: 'Fuel Theft Report')),
 
+          // Real screens — ported from LoadCellReportPage.jsx /
+          // LiveLoadPage.jsx. ChatbotWidget intentionally not ported on
+          // either (fully local demo, no real backend behavior).
+          GoRoute(path: '/load-cell', builder: (_, __) => const LoadCellReportScreen()),
+          GoRoute(path: '/live-load', builder: (_, __) => const LiveLoadScreen()),
+
           // Screens present in the original web app's sidebar but not
           // ported yet — see README.md "Screens not yet ported".
           GoRoute(path: '/trips', builder: (_, __) => const PendingScreen(title: 'Trips')),
           GoRoute(path: '/geofence', builder: (_, __) => const PendingScreen(title: 'Geofence')),
           GoRoute(path: '/analytics', builder: (_, __) => const PendingScreen(title: 'Analytics')),
           GoRoute(path: '/iot-sensors', builder: (_, __) => const PendingScreen(title: 'IoT Sensors')),
-          GoRoute(path: '/load-cell', builder: (_, __) => const PendingScreen(title: 'Load Cell Report')),
-          GoRoute(path: '/live-load', builder: (_, __) => const PendingScreen(title: 'Live Load Graph')),
         ],
       ),
     ],
