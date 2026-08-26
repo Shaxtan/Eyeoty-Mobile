@@ -11,9 +11,11 @@ class AlertTypeListSheet extends StatefulWidget {
   final String type; // 'ALL' or a short type code
   final List<DbAlert> alerts;
 
-  const AlertTypeListSheet({super.key, required this.type, required this.alerts});
+  const AlertTypeListSheet(
+      {super.key, required this.type, required this.alerts});
 
-  static Future<void> show(BuildContext context, {required String type, required List<DbAlert> alerts}) {
+  static Future<void> show(BuildContext context,
+      {required String type, required List<DbAlert> alerts}) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -55,7 +57,9 @@ class _AlertTypeListSheetState extends State<AlertTypeListSheet> {
     filtered = [...filtered]
       ..sort((a, b) => (b.createdOn ?? '').compareTo(a.createdOn ?? ''));
 
-    final title = widget.type == 'ALL' ? 'All Alerts' : '${alertTypeLabel(widget.type)} Alerts';
+    final title = widget.type == 'ALL'
+        ? 'All Alerts'
+        : '${alertTypeLabel(widget.type)} Alerts';
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -77,10 +81,13 @@ class _AlertTypeListSheetState extends State<AlertTypeListSheet> {
                     Expanded(
                       child: Text(
                         '$title (${filtered.length})',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                     ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                    IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context)),
                   ],
                 ),
               ),
@@ -99,7 +106,9 @@ class _AlertTypeListSheetState extends State<AlertTypeListSheet> {
               const SizedBox(height: 8),
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(child: Text('No alerts found.', style: TextStyle(color: Colors.grey)))
+                    ? const Center(
+                        child: Text('No alerts found.',
+                            style: TextStyle(color: Colors.grey)))
                     : ListView.separated(
                         controller: scrollController,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -107,15 +116,18 @@ class _AlertTypeListSheetState extends State<AlertTypeListSheet> {
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, i) {
                           final a = filtered[i];
-                          final meta = alertTypeMetaFor(a.type);
+                          final meta = alertMetaFromMessage(a.message, a.type);
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: CircleAvatar(
-                              backgroundColor: meta.color.withValues(alpha: 0.12),
-                              child: Icon(meta.icon, color: meta.color, size: 18),
+                              backgroundColor:
+                                  meta.color.withValues(alpha: 0.12),
+                              child:
+                                  Icon(meta.icon, color: meta.color, size: 18),
                             ),
                             title: Text(a.vehicleNumber ?? a.imei ?? '\u2014',
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700, fontSize: 13)),
                             subtitle: Text(
                               a.message ?? a.address ?? '${meta.label} alert',
                               maxLines: 2,
@@ -124,7 +136,8 @@ class _AlertTypeListSheetState extends State<AlertTypeListSheet> {
                             ),
                             trailing: Text(
                               a.createdOn ?? '',
-                              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                              style: TextStyle(
+                                  fontSize: 10, color: Colors.grey.shade500),
                             ),
                           );
                         },

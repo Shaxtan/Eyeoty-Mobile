@@ -111,7 +111,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                         isScrollControlled: true,
                         builder: (_) => AlertDetailSheet(alert: a),
                       ),
-                      title: Text(a.type,
+                      title: Text(a.displayType,
                           style: const TextStyle(
                               fontWeight: FontWeight.w700, fontSize: 14)),
                       subtitle: Text(

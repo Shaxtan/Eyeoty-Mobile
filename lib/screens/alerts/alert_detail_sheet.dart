@@ -22,7 +22,9 @@ class AlertDetailSheet extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(alert.type, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                child: Text(alert.displayType,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800)),
               ),
               SeverityBadge(severity: alert.severity),
             ],
@@ -36,7 +38,10 @@ class AlertDetailSheet extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               alert.message!,
-              style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic, fontSize: 13),
+              style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13),
             ),
           ],
           const SizedBox(height: 16),
@@ -49,8 +54,15 @@ class AlertDetailSheet extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            SizedBox(width: 90, child: Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 12))),
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+            SizedBox(
+                width: 90,
+                child: Text(label,
+                    style:
+                        TextStyle(color: Colors.grey.shade500, fontSize: 12))),
+            Expanded(
+                child: Text(value,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600))),
           ],
         ),
       );

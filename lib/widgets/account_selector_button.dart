@@ -52,12 +52,14 @@ class AccountSelectorButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.business_outlined, size: 14, color: AppColors.primary),
+                  const Icon(Icons.business_outlined,
+                      size: 14, color: AppColors.primary),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       prov.selectedAccount!.label,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                     ),
@@ -88,7 +90,9 @@ class _AccountPickerSheetState extends State<_AccountPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = widget.accounts.where((a) => a.label.toLowerCase().contains(_query.toLowerCase())).toList();
+    final filtered = widget.accounts
+        .where((a) => a.label.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
 
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
@@ -107,9 +111,12 @@ class _AccountPickerSheetState extends State<_AccountPickerSheet> {
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Row(
                   children: [
-                    Icon(Icons.business_outlined, size: 16, color: AppColors.primary),
+                    Icon(Icons.business_outlined,
+                        size: 16, color: AppColors.primary),
                     SizedBox(width: 8),
-                    Text('Switch Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+                    Text('Switch Account',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w800)),
                   ],
                 ),
               ),
@@ -127,7 +134,9 @@ class _AccountPickerSheetState extends State<_AccountPickerSheet> {
               ),
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(child: Text('No accounts found', style: TextStyle(color: Colors.grey)))
+                    ? const Center(
+                        child: Text('No accounts found',
+                            style: TextStyle(color: Colors.grey)))
                     : ListView.builder(
                         controller: scrollController,
                         itemCount: filtered.length,
@@ -137,29 +146,55 @@ class _AccountPickerSheetState extends State<_AccountPickerSheet> {
                           return ListTile(
                             leading: CircleAvatar(
                               radius: 14,
-                              backgroundColor: active ? AppColors.primary : Colors.grey.shade200,
+                              backgroundColor: active
+                                  ? AppColors.primary
+                                  : Colors.grey.shade200,
                               child: Text(
-                                a.label.isNotEmpty ? a.label[0].toUpperCase() : '?',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: active ? Colors.white : Colors.black87),
+                                a.label.isNotEmpty
+                                    ? a.label[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color:
+                                        active ? Colors.white : Colors.black87),
                               ),
                             ),
                             title: Text(
                               a.label,
-                              style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w800 : FontWeight.w500, color: active ? AppColors.primary : Colors.black87),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: active
+                                      ? FontWeight.w800
+                                      : FontWeight.w500,
+                                  color: active
+                                      ? AppColors.primary
+                                      : Colors.black87),
                             ),
-                            subtitle: Text('${a.vehicles} vehicles', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                            trailing: active ? const Icon(Icons.check, size: 16, color: AppColors.primary) : null,
+                            subtitle: Text('ID: ${a.id}',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey.shade500)),
+                            trailing: active
+                                ? const Icon(Icons.check,
+                                    size: 16, color: AppColors.primary)
+                                : null,
                             onTap: () => Navigator.pop(context, a),
                           );
                         },
                       ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(color: Colors.grey.shade50, border: Border(top: BorderSide(color: Colors.grey.shade100))),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    border:
+                        Border(top: BorderSide(color: Colors.grey.shade100))),
                 child: Row(
                   children: [
-                    Text('${widget.accounts.length} accounts', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    Text('${widget.accounts.length} accounts',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500)),
                   ],
                 ),
               ),
