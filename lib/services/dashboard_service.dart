@@ -89,6 +89,12 @@ class DashboardService {
     required String accountId,
     int limit = 10,
   }) async {
+    // NOTE: accid/limit must go through `query:`, not be embedded in the
+    // path string. ApiClient._uri() builds the request with
+    // Uri.replace(path: ...), which percent-encodes '?' when it's part of
+    // the path argument (turning it into a literal %3F instead of a query
+    // separator) — that silently corrupted this endpoint's URL and made
+    // the backend reject/404 it, so the chart never got data.
     final json = await _client.post(
       _topDistancePath,
       body: {},
@@ -118,9 +124,18 @@ class DashboardService {
     final results = await Future.wait(days.map((d) async {
       final apiDate = _toApiDate(d);
       try {
+        // NOTE: accid must go through `query:`, not be embedded in the
+        // path string. ApiClient._uri() builds the request with
+        // Uri.replace(path: ...), which percent-encodes '?' when it's
+        // part of the path argument (turning it into a literal %3F
+        // instead of a query separator) — that silently corrupted this
+        // endpoint's URL and made every day's call return 0, so the
+        // whole utilization chart showed 0%. Same URL-construction bug
+        // that the top-distance endpoint had.
         final json = await _client.post(
-          '$_accountSummaryPath?accid=$accountId',
+          _accountSummaryPath,
           body: {'startDate': apiDate, 'endDate': apiDate},
+          query: {'accid': accountId},
         );
         final body = json as Map<String, dynamic>;
         if (body['resultCode'] != 1) return _DayResult(d, 0);
