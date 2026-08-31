@@ -36,8 +36,9 @@ class AppNavShell extends StatefulWidget {
 
 class _AppNavShellState extends State<AppNavShell> {
   static const _primaryDestinations = [
-    _NavItem('/dashboard', Icons.dashboard_outlined, 'Dashboard'),
     _NavItem('/tracking', Icons.near_me_outlined, 'Tracking'),
+    _NavItem('/reports', Icons.description_outlined, 'Reports'),
+    _NavItem('/dashboard', Icons.dashboard_outlined, 'Dashboard'),
     _NavItem('/alerts', Icons.notifications_outlined, 'Alerts'),
     _NavItem('/settings', Icons.settings_outlined, 'Settings'),
   ];
@@ -54,9 +55,6 @@ class _AppNavShellState extends State<AppNavShell> {
       _NavItem('/trips', Icons.alt_route_outlined, 'Trips'),
       _NavItem('/geofence', Icons.fence_outlined, 'Geofence'),
       _NavItem('/analytics', Icons.bar_chart_outlined, 'Analytics'),
-    ]),
-    _NavSection('REPORTS', [
-      _NavItem('/reports', Icons.description_outlined, 'Reports'),
     ]),
     _NavSection('IOT & SENSORS', [
       _NavItem('/iot-sensors', Icons.sensors_outlined, 'IoT Sensors'),

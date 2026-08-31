@@ -40,6 +40,11 @@ class TrackingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearSelection() {
+    selected = null;
+    notifyListeners();
+  }
+
   /// One-off live-track lookup for a single vehicle — used by
   /// VehicleDetailSheet's 30s polling, distinct from `load()` which
   /// fetches the whole fleet's map-view snapshot.
