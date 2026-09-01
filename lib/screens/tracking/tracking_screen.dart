@@ -36,6 +36,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   final _mapController = MapController();
   bool _initialSelectHandled = false;
   bool _sidebarOpen = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -202,7 +203,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ),
           ),
 
-        // Sidebar toggle button
+        // Sidebar toggle button - a distinct icon from the app's own
+        // hamburger menu (Icons.menu_rounded in AppNavShell), so the two
+        // toggles aren't visually identical.
         Positioned(
           left: 12,
           top: 12,
@@ -215,7 +218,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
               onTap: () => setState(() => _sidebarOpen = !_sidebarOpen),
               child: Padding(
                 padding: const EdgeInsets.all(10),
-                child: Icon(_sidebarOpen ? Icons.close_rounded : Icons.menu_rounded, size: 20),
+                // child: Icon(_sidebarOpen ? Icons.close_rounded : Icons.directions_car_filled_rounded, size: 20),
+                // child: Icon(_sidebarOpen ? Icons.close_rounded : Icons.view_sidebar_rounded, size: 20),
+                child: Icon(_sidebarOpen ? Icons.chevron_left_rounded : Icons.chevron_right_rounded, size: 22),
               ),
             ),
           ),
@@ -248,6 +253,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Widget _sidebarPanel(TrackingProvider tracking) {
+    final query = _searchQuery.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? tracking.vehicles
+        : tracking.vehicles.where((v) => v.displayName.toLowerCase().contains(query) || v.imei.toLowerCase().contains(query)).toList();
+
     return Container(
       color: Colors.white,
       child: Column(
@@ -274,15 +284,47 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
+              decoration: InputDecoration(
+                hintText: 'Search vehicle or IMEI\u2026',
+                hintStyle: const TextStyle(fontSize: 12.5),
+                prefixIcon: const Icon(Icons.search, size: 18),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: () => setState(() => _searchQuery = ''),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              style: const TextStyle(fontSize: 12.5),
+            ),
+          ),
           Expanded(
             child: tracking.vehicles.isEmpty
                 ? const EmptyView(message: 'No live vehicles found.', icon: Icons.local_shipping_outlined)
-                : ListView.separated(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: tracking.vehicles.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) => _vehicleRow(tracking.vehicles[i], tracking),
-                  ),
+                : filtered.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                        child: Center(
+                          child: Text(
+                            'No vehicles match "$_searchQuery".',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, i) => _vehicleRow(filtered[i], tracking),
+                      ),
           ),
         ],
       ),

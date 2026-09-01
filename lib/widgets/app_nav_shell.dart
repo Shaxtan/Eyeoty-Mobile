@@ -5,25 +5,7 @@ import 'account_selector_button.dart';
 import '../providers/selected_account_provider.dart';
 import '../theme/app_colors.dart';
 
-/// Responsive navigation shell wrapping every authenticated route.
-///
-/// - Narrow widths (phone) -> BottomNavigationBar + a dark-navy Drawer
-///   for everything else.
-/// - Wide widths (tablet / Chrome desktop) -> a persistent dark-navy
-///   sidebar column (replacing the earlier plain NavigationRail +
-///   separate light "MORE" panel) with the SAME grouped/styled nav
-///   items as the drawer, so the two layouts feel like one product
-///   rather than two different UI kits stitched together.
-///
-/// Sidebar styling uses AppColors.sidebar/sidebarSoft/sidebarLine/
-/// sidebarText/sidebarMuted - these were already ported 1:1 from the
-/// web app's design tokens early in this project but were never
-/// actually applied anywhere until now.
-///
-/// This is the ONLY Scaffold in the authenticated part of the app —
-/// individual screens (DashboardScreen, AlertsScreen, etc.) return
-/// plain body content, not their own Scaffold/AppBar, so this shell's
-/// single AppBar + Drawer + BottomNavigationBar work correctly together.
+
 class AppNavShell extends StatefulWidget {
   final Widget child;
   final String currentPath;
