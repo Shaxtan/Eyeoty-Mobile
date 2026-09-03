@@ -45,23 +45,29 @@ GoRouter buildRouter(AuthProvider authProvider) {
           return AppNavShell(currentPath: state.matchedLocation, child: child);
         },
         routes: [
-          GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
+          GoRoute(
+              path: '/dashboard', builder: (_, __) => const DashboardScreen()),
           GoRoute(
             path: '/tracking',
             builder: (context, state) =>
                 TrackingScreen(initialImei: state.uri.queryParameters['imei']),
           ),
           GoRoute(path: '/alerts', builder: (_, __) => const AlertsScreen()),
-          GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+          GoRoute(
+              path: '/settings', builder: (_, __) => const SettingsScreen()),
 
           // Real screen — replaces the old PendingScreen now that
           // FleetTableCard.jsx / dashboard.service.js have been ported.
-          GoRoute(path: '/vehicles', builder: (_, __) => const FleetDevicesScreen()),
+          GoRoute(
+              path: '/vehicles',
+              builder: (_, __) => const FleetDevicesScreen()),
 
           // Real screen — UI fully ported from FleetIntelligencePage.jsx.
           // Data layer is intentionally NOT wired (useFleetScan.js source
           // wasn't available) — see FleetIntelligenceService for details.
-          GoRoute(path: '/fleet-intelligence', builder: (_, __) => const FleetIntelligenceScreen()),
+          GoRoute(
+              path: '/fleet-intelligence',
+              builder: (_, __) => const FleetIntelligenceScreen()),
 
           // Real screen — ported from MapPage.jsx.
           GoRoute(path: '/map-view', builder: (_, __) => const MapViewScreen()),
@@ -72,21 +78,51 @@ GoRouter buildRouter(AuthProvider authProvider) {
           // blocked on loadcell.service.js's real endpoints) and routes
           // to an honest PendingScreen below rather than a dead end.
           GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
-          GoRoute(path: '/reports/distance', builder: (_, __) => const DistanceReportScreen()),
-          GoRoute(path: '/reports/stoppage', builder: (_, __) => const StoppageReportScreen()),
-          GoRoute(path: '/reports/overspeed', builder: (_, __) => const OverspeedReportScreen()),
-          GoRoute(path: '/reports/trackplay', builder: (_, __) => const TrackPlayScreen()),
-          GoRoute(path: '/reports/hourly', builder: (_, __) => const WorkingHourReportScreen()),
-          GoRoute(path: '/reports/fuel-theft', builder: (_, __) => const PendingScreen(title: 'Fuel Theft Report')),
+          GoRoute(
+            path: '/reports/distance',
+            builder: (_, state) => DistanceReportScreen(
+              initialImei: state.uri.queryParameters['imei'],
+            ),
+          ),
+          GoRoute(
+              path: '/reports/stoppage',
+              builder: (_, __) => const StoppageReportScreen()),
+          GoRoute(
+              path: '/reports/overspeed',
+              builder: (_, __) => const OverspeedReportScreen()),
+          GoRoute(
+              path: '/reports/trackplay',
+              builder: (_, __) => const TrackPlayScreen()),
+          GoRoute(
+              path: '/reports/hourly',
+              builder: (_, __) => const WorkingHourReportScreen()),
+          GoRoute(
+              path: '/reports/fuel-theft',
+              builder: (_, __) =>
+                  const PendingScreen(title: 'Fuel Theft Report')),
 
           // Screens present in the original web app's sidebar but not
           // ported yet — see README.md "Screens not yet ported".
-          GoRoute(path: '/trips', builder: (_, __) => const PendingScreen(title: 'Trips')),
-          GoRoute(path: '/geofence', builder: (_, __) => const PendingScreen(title: 'Geofence')),
-          GoRoute(path: '/analytics', builder: (_, __) => const PendingScreen(title: 'Analytics')),
-          GoRoute(path: '/iot-sensors', builder: (_, __) => const PendingScreen(title: 'IoT Sensors')),
-          GoRoute(path: '/load-cell', builder: (_, __) => const PendingScreen(title: 'Load Cell Report')),
-          GoRoute(path: '/live-load', builder: (_, __) => const PendingScreen(title: 'Live Load Graph')),
+          GoRoute(
+              path: '/trips',
+              builder: (_, __) => const PendingScreen(title: 'Trips')),
+          GoRoute(
+              path: '/geofence',
+              builder: (_, __) => const PendingScreen(title: 'Geofence')),
+          GoRoute(
+              path: '/analytics',
+              builder: (_, __) => const PendingScreen(title: 'Analytics')),
+          GoRoute(
+              path: '/iot-sensors',
+              builder: (_, __) => const PendingScreen(title: 'IoT Sensors')),
+          GoRoute(
+              path: '/load-cell',
+              builder: (_, __) =>
+                  const PendingScreen(title: 'Load Cell Report')),
+          GoRoute(
+              path: '/live-load',
+              builder: (_, __) =>
+                  const PendingScreen(title: 'Live Load Graph')),
         ],
       ),
     ],

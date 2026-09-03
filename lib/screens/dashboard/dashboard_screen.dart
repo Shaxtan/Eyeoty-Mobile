@@ -225,7 +225,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   loading: dash.topDistanceStatus == LoadStatus.loading &&
                       dash.topDistance.isEmpty,
                   onTapItem: (TopDistanceItem d) {
-                    if (d.imei != null) context.go('/tracking?imei=${d.imei}');
+                    // Match the web app's openDistanceReport() behaviour —
+                    // clicking a vehicle in Top by Distance jumps into the
+                    // Distance Report screen and auto-fetches the report
+                    // for that IMEI (see DistanceReportScreen.initialImei).
+                    if (d.imei != null) {
+                      context.go('/reports/distance?imei=${d.imei}');
+                    }
                   },
                   onViewFullReport: () => context.go('/reports'),
                 ),

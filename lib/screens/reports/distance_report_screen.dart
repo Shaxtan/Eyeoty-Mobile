@@ -15,8 +15,19 @@ const _quickOptions = ['Today', 'Yesterday', 'Last 7 Days'];
 
 /// Ported from DistanceReportPage.jsx. Export (CSV/Excel/PDF) is NOT
 /// included - same deferred-feature pattern as FleetDevicesScreen.
+/// Ported from DistanceReportPage.jsx. Export (CSV/Excel/PDF) is NOT
+/// included - same deferred-feature pattern as FleetDevicesScreen.
+///
+/// Deep-linkable: pass [initialImei] (e.g. from the dashboard's Top by
+/// Distance card via `/reports/distance?imei=...`) and the screen will
+/// preselect that vehicle in the IMEI dropdown once the list has
+/// loaded, then auto-fetch the report for it — no extra tap needed.
+/// Same behaviour as the web app's `state.targetImei` → useEffect
+/// auto-fetch in DistanceReportPage.jsx.
 class DistanceReportScreen extends StatefulWidget {
-  const DistanceReportScreen({super.key});
+  final String? initialImei;
+
+  const DistanceReportScreen({super.key, this.initialImei});
 
   @override
   State<DistanceReportScreen> createState() => _DistanceReportScreenState();
@@ -36,7 +47,7 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
   String? _error;
   DateTime? _committedStart;
   DateTime? _committedEnd;
-
+  bool _autoFetched = false;
   @override
   void initState() {
     super.initState();
@@ -54,9 +65,29 @@ class _DistanceReportScreenState extends State<DistanceReportScreen> {
           await context.read<ReportsRepository>().getImeiDropdown(accountId);
       setState(() {
         _imeiList = list;
-        if (list.isNotEmpty) _imei = list.first.imei;
+        if (list.isNotEmpty) {
+          // Prefer a deep-linked IMEI (from the dashboard's Top by
+          // Distance card, or any future caller passing ?imei=...). If
+          // it's not in the account's IMEI list — e.g. the vehicle
+          // belongs to a different account than the currently-selected
+          // one — fall back to the first entry so the dropdown isn't
+          // stuck in an unusable state.
+          final target = widget.initialImei;
+          final matches = target != null && list.any((o) => o.imei == target);
+          _imei = matches ? target : list.first.imei;
+        }
         _imeiLoading = false;
       });
+      // Auto-run the report once, only when the deep-linked IMEI was
+      // actually applied — matches DistanceReportPage.jsx's
+      // autoFetchedRef.current guard so this only ever fires the
+      // opening request, never a re-fetch on subsequent list reloads.
+      if (!_autoFetched &&
+          widget.initialImei != null &&
+          _imei == widget.initialImei) {
+        _autoFetched = true;
+        _fetchReport();
+      }
     } catch (_) {
       setState(() => _imeiLoading = false);
     }
