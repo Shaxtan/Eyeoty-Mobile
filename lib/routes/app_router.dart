@@ -81,8 +81,11 @@ GoRouter buildRouter(AuthProvider authProvider) {
           // rather than a dead end.
           GoRoute(path: '/reports', builder: (_, __) => const ReportsScreen()),
           GoRoute(
-              path: '/reports/distance',
-              builder: (_, __) => const DistanceReportScreen()),
+            path: '/reports/distance',
+            builder: (_, state) => DistanceReportScreen(
+              initialImei: state.uri.queryParameters['imei'],
+            ),
+          ),
           GoRoute(
               path: '/reports/stoppage',
               builder: (_, __) => const StoppageReportScreen()),
